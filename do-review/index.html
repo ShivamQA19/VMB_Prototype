@@ -487,10 +487,10 @@ function DetailView({ order, startEditing, onBack, onUpdate, onClone, flash, gua
   };
   const tryLeave = () => { if (dirty) setModal("leave"); else onBack(); };
 
-  const doApprove = remark => {
+  const doApprove = nfaNo => {
     const so = "11004" + String(59000 + Math.floor(Math.random() * 900));
-    onUpdate({ ...order, status:STATUS.OK, sapSo:so, logs:[...order.logs, { ts:new Date(), by:ME, text:`Approved · SAP SO ${so} created${remark ? ` · “${remark}”` : ""}` }] });
-    setModal(null); flash(`${order.id} approved · SAP SO ${so} created`, "ok");
+    onUpdate({ ...order, status:STATUS.OK, sapSo:so, nfa:nfaNo, logs:[...order.logs, { ts:new Date(), by:ME, text:`Approved · NFA ${nfaNo} · SAP SO ${so} created` }] });
+    setModal(null); flash(`${order.id} sent to SAP against ${nfaNo} · SAP SO ${so} created`, "ok");
   };
   const doCancel = (reason, note, andClone) => {
     const cancelled = { ...order, status:STATUS.CAN, cancelReason:reason, logs:[...order.logs, { ts:new Date(), by:ME, text:`Cancelled · ${reason}${note ? ` · “${note}”` : ""}` }] };
@@ -604,7 +604,7 @@ function DetailView({ order, startEditing, onBack, onUpdate, onClone, flash, gua
       </div>
     </div>`}
 
-    ${modal === "approve" && html`<${ApproveModal} order=${order} pr=${pr} onClose=${() => setModal(null)} onConfirm=${doApprove} />`}
+    ${modal === "approve" && html`<${NfaModal} order=${order} onClose=${() => setModal(null)} onConfirm=${doApprove} />`}
     ${modal === "cancel" && html`<${CancelModal} order=${order} onClose=${() => setModal(null)} onConfirm=${doCancel} />`}
     ${modal === "clone" && html`<${ConfirmModal} icon="Copy" title=${`Clone ${order.id}?`} sub="A new order is created with the same product, quantity, parties, plant and commercial terms. It opens in edit mode so you can adjust it before saving." btn="Clone & open" onClose=${() => setModal(null)} onConfirm=${() => { setModal(null); onClone(order, false); }} />`}
     ${modal === "discard" && html`<${ConfirmModal} icon="Alert" tone=${C.orange} title="Discard changes?" sub=${`${changes.length} change${changes.length === 1 ? "" : "s"} will be lost: ${changes.map(c => c[1]).join(", ")}.`} btn="Discard changes" variant="dangerSolid" onClose=${() => setModal(null)} onConfirm=${() => { setModal(null); discard(); }} />`}
@@ -620,23 +620,82 @@ function ConfirmModal({ icon, tone = C.primary, title, sub, btn, variant = "prim
   <//>`;
 }
 
-function ApproveModal({ order, pr, onClose, onConfirm }) {
-  const [ok, setOk] = useState(false); const [note, setNote] = useState("");
-  const rows = [["Product", order.product], ["Quantity", `${order.qty} MT`], ["Value per MT", inr(pr.perMt)], ["Supplying Plant", order.plant], ["Buyer", order.buyer], ["Consignee", order.consignee]];
-  return html`<${Modal} onClose=${onClose} width=${540}>
-    <${ModalHead} icon="CheckCircle" tone=${C.green} title=${`Approve ${order.id}`} sub="Approving creates the SAP Sales Order. After that, the order can't be edited or cancelled here." onClose=${onClose} />
-    <div style=${{ border:`1px solid ${C.line}`, borderRadius:8, overflow:"hidden", marginBottom:14 }}>
-      ${rows.map(([l, v], i) => html`<div key=${l} style=${{ display:"grid", gridTemplateColumns:"130px 1fr", gap:10, padding:"8px 12px", fontSize:12.5, background:i % 2 ? C.panel : "#FAFCFE", borderTop:i ? `1px solid ${C.line}` : "none" }}><span style=${{ color:C.sub }}>${l}</span><span style=${{ fontWeight:500, wordBreak:"break-word" }}>${v}</span></div>`)}
-      <div style=${{ display:"flex", justifyContent:"space-between", padding:"10px 12px", background:C.primaryDim, fontWeight:700, color:C.primary }}><span>Total Order Value</span><span>${inr(pr.total)}</span></div>
+const NFAS = [
+  { no:"NFA271502", purpose:"HUL contract Oct'26", segment:"HUL", total:19800, remaining:7784.5, validity:"01-10-2026 to 31-10-2026" },
+  { no:"NFA271488", purpose:"Fertiliser segment Q3 FY27", segment:"Fertiliser", total:25000, remaining:11250, validity:"01-10-2026 to 31-12-2026" },
+  { no:"NFA271390", purpose:"Coromandel annual contract FY27", segment:"Fertiliser", total:60000, remaining:22450, validity:"01-04-2026 to 31-03-2027" },
+  { no:"NFA271455", purpose:"Spot sale Oct'26", segment:"Spot", total:5000, remaining:80, validity:"01-10-2026 to 31-10-2026" },
+];
+const mt = n => Number(n).toLocaleString("en-IN", { minimumFractionDigits:3, maximumFractionDigits:3 });
+
+function NfaModal({ order, onClose, onConfirm }) {
+  const [sel, setSel] = useState(null);
+  const [q, setQ] = useState("");
+  const [open, setOpen] = useState(false);
+  const [sending, setSending] = useState(false);
+  const nfa = NFAS.find(n => n.no === sel);
+  const list = NFAS.filter(n => (n.no + " " + n.purpose + " " + n.segment).toLowerCase().includes(q.toLowerCase()));
+  const short = nfa && Number(order.qty) > nfa.remaining;
+  const pick = n => { setSel(n.no); setQ(n.no); setOpen(false); };
+  const clear = () => { setSel(null); setQ(""); setOpen(true); };
+  const send = () => { setSending(true); setTimeout(() => { nfa.remaining -= Number(order.qty); onConfirm(nfa.no); }, 800); };
+  const ro = { ...inputStyle, background:"#F1F2F4", color:"#6B7280", minHeight:44, display:"flex", alignItems:"center" };
+  const L = ({ children }) => html`<label style=${{ ...labelStyle, fontWeight:700, marginBottom:8 }}>${children}</label>`;
+  const roField = (label, val) => html`<div><${L}>${label}<//><div style=${ro}>${val ?? ""}</div></div>`;
+
+  return html`<div className="modal-backdrop" onClick=${sending ? undefined : onClose} style=${{ position:"fixed", inset:0, background:"rgba(16,24,40,0.45)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:200, padding:16, overflowY:"auto" }}>
+    <div className="modal-pop" role="dialog" aria-modal="true" aria-label="NFA Configuration" onClick=${e => e.stopPropagation()}
+      style=${{ width:"100%", maxWidth:680, background:C.panel, borderRadius:6, boxShadow:"0 24px 48px -12px rgba(16,24,40,0.3)", display:"flex", flexDirection:"column" }}>
+      <div style=${{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"18px 22px", borderBottom:`1px solid ${C.line}` }}>
+        <div style=${{ fontSize:19, fontWeight:500, color:"#4A5260" }}>NFA Configuration</div>
+        <button onClick=${onClose} disabled=${sending} aria-label="Close" style=${{ width:22, height:22, borderRadius:"50%", border:"none", background:"#C4C8CE", color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", padding:0 }}><${Icon} n="X" size=${13} sw=${3} /></button>
+      </div>
+
+      <div style=${{ padding:"20px 22px 26px" }}>
+        <div className="grid-2" style=${{ gap:"20px 24px" }}>
+          <div style=${{ position:"relative" }}>
+            <${L}>NFA Number<//>
+            <div style=${{ position:"relative" }}>
+              <input value=${q} placeholder="Search NFA number" role="combobox" aria-expanded=${open} disabled=${sending}
+                onFocus=${() => setOpen(true)} onBlur=${() => setTimeout(() => setOpen(false), 120)}
+                onInput=${e => { setQ(e.target.value); setSel(null); setOpen(true); }}
+                style=${{ ...inputStyle, minHeight:44, paddingRight:58, border:`1px solid ${open ? C.primary : C.field}` }} />
+              <div style=${{ position:"absolute", right:8, top:0, bottom:0, display:"flex", alignItems:"center", gap:4, color:"#8A9099" }}>
+                ${q && html`<button aria-label="Clear NFA" onMouseDown=${e => e.preventDefault()} onClick=${clear} style=${{ background:"none", border:"none", cursor:"pointer", color:"#8A9099", padding:2, display:"flex" }}><${Icon} n="X" size=${15} /></button>`}
+                <span style=${{ width:0, height:0, borderLeft:"5px solid transparent", borderRight:"5px solid transparent", borderTop:"5px solid #8A9099", marginLeft:4 }}></span>
+              </div>
+            </div>
+            ${open && html`<div className="reveal-down" role="listbox" style=${{ position:"absolute", left:0, right:0, top:"100%", marginTop:4, background:C.panel, border:`1px solid ${C.line}`, borderRadius:4, boxShadow:"0 12px 24px -10px rgba(16,24,40,.3)", zIndex:5, maxHeight:220, overflowY:"auto" }}>
+              ${list.length === 0 && html`<div style=${{ padding:"10px 12px", fontSize:12.5, color:C.sub }}>No NFA found</div>`}
+              ${list.map(n => html`<div key=${n.no} role="option" aria-selected=${sel === n.no} onMouseDown=${e => e.preventDefault()} onClick=${() => pick(n)}
+                className="row-hover" style=${{ padding:"9px 12px", cursor:"pointer", background:sel === n.no ? C.primaryDim : undefined, borderTop:`1px solid ${C.line}` }}>
+                <div style=${{ fontSize:13, fontWeight:500 }}>${n.no}</div>
+                <div style=${{ fontSize:11.5, color:C.sub }}>${n.purpose} · Remaining ${mt(n.remaining)} MT</div>
+              </div>`)}
+            </div>`}
+          </div>
+          ${roField("NFA Purpose", nfa && nfa.purpose)}
+          ${roField("Segment", nfa && nfa.segment)}
+          ${roField("Total Quantity (MT)", nfa && mt(nfa.total))}
+          <div>
+            <${L}>Remaining Quantity (MT)<//>
+            <div style=${{ ...ro, ...(short ? { background:C.redDim, color:"#B42E34", border:"1px solid #F2C3C5" } : {}) }}>${nfa ? mt(nfa.remaining) : ""}</div>
+            ${short && html`<div style=${{ fontSize:11.5, color:"#B42E34", marginTop:5 }}>This order needs ${mt(order.qty)} MT, more than is left on this NFA. Pick another NFA.</div>`}
+          </div>
+          ${roField("Validity Period", nfa && nfa.validity)}
+        </div>
+      </div>
+
+      <div style=${{ display:"flex", justifyContent:"flex-end", gap:16, padding:"14px 22px", borderTop:`1px solid ${C.line}` }}>
+        <button onClick=${onClose} disabled=${sending} style=${{ minWidth:88, minHeight:40, padding:"8px 20px", background:"#F1F2F4", border:"1px solid #C9CDD3", borderRadius:4, fontSize:14.5, fontWeight:500, cursor:"pointer", color:C.ink }}>Close</button>
+        <button onClick=${send} disabled=${!nfa || short || sending} title=${!nfa ? "Select an NFA number first" : short ? "Not enough quantity left on this NFA" : undefined}
+          style=${{ minWidth:136, minHeight:40, padding:"8px 22px", background:"#1660AC", border:"none", borderRadius:4, color:"#fff", fontSize:14.5, fontWeight:500, cursor:!nfa || short || sending ? "not-allowed" : "pointer", opacity:!nfa || short ? .5 : 1, display:"inline-flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+          ${sending && html`<span style=${{ width:14, height:14, border:"2px solid rgba(255,255,255,.4)", borderTopColor:"#fff", borderRadius:"50%", animation:"spin .8s linear infinite" }}></span>`}
+          ${sending ? "Sending…" : "Send to SAP"}
+        </button>
+      </div>
     </div>
-    <label style=${labelStyle}>Comment (optional)</label>
-    <textarea rows="2" value=${note} onInput=${e => setNote(e.target.value)} placeholder="Add a note for the order history…" style=${{ ...inputStyle, resize:"vertical" }} />
-    <label style=${{ display:"flex", gap:10, alignItems:"flex-start", marginTop:14, fontSize:12.5, cursor:"pointer", lineHeight:1.45 }}>
-      <input type="checkbox" checked=${ok} onChange=${e => setOk(e.target.checked)} style=${{ marginTop:2, width:16, height:16, accentColor:C.green }} />
-      I've checked the price, quantity, plant, buyer and consignee.
-    </label>
-    <div style=${{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:18 }}><${Button} variant="secondary" onClick=${onClose}>Go back<//><${Button} variant="success" icon="Check" disabled=${!ok} onClick=${() => onConfirm(note.trim())}>Confirm Approve<//></div>
-  <//>`;
+  </div>`;
 }
 
 function CancelModal({ order, onClose, onConfirm }) {
