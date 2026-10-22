@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Reconciliation Dashboard Prototype</title>
+<title>Ledger Reconciliation (Group-wise) Prototype</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" />
 <style>
 /* Single light theme on purpose: mirrors the client's existing light enterprise UI (same as the other VMB prototypes). */
@@ -125,7 +125,31 @@ const GROUPS = [
   { code: '777', name: 'MAHAVEER', email: '[group email]', customers: [
     ['777', 'MAHAVEER', 'North', [
       ['Sep 2026', 6845210.50, 7392640.25, 'Pending', '', '', ''],
-      ['Mar 2026', 5980400.00, 6845210.50, 'Verified', '24/04/2026', 'Verified', '24-Apr-2026']]]
+      ['Mar 2026', 5980400.00, 6845210.50, 'Verified', '24/04/2026', 'Verified', '24-Apr-2026']]],
+    ['778', 'MAHAVEER METALS', 'North', [
+      ['Sep 2026', 2310450.00, 2875120.60, 'Verified', '14/10/2026', 'Verified', '14-Oct-2026'],
+      ['Mar 2026', 1985000.00, 2310450.00, 'Verified', '21/04/2026', 'Verified', '21-Apr-2026']]],
+    ['779', 'MAHAVEER ALLOYS PVT LTD', 'West', [
+      ['Sep 2026', 4102300.00, 4630815.40, 'Disputed', '', 'Credit note of 30-Jul not received', '15-Oct-2026'],
+      ['Mar 2026', 3650000.00, 4102300.00, 'Verified', '23/04/2026', 'Verified', '23-Apr-2026']]],
+    ['780', 'MAHAVEER INDUSTRIES', 'West', [
+      ['Sep 2026', 1250000.00, 1418760.00, 'Pending', '', '', ''],
+      ['Mar 2026', 1100500.00, 1250000.00, 'Verified', '26/04/2026', 'Verified', '26-Apr-2026']]],
+    ['781', 'MAHAVEER CASTINGS', 'East', [
+      ['Sep 2026', 3375800.00, 3012455.25, 'Exception Raised', '', 'TDS certificate mismatch – under review', '18-Oct-2026'],
+      ['Mar 2026', 2890000.00, 3375800.00, 'Verified', '20/04/2026', 'Verified', '20-Apr-2026']]],
+    ['782', 'MAHAVEER ZINC TRADERS', 'South', [
+      ['Sep 2026', 980400.00, 1265300.80, 'Verified', '11/10/2026', 'Verified', '11-Oct-2026'],
+      ['Mar 2026', 845000.00, 980400.00, 'Disputed', '', 'Payment of 29-Mar not credited', '29-Apr-2026']]],
+    ['783', 'MAHAVEER WIRES LIMITED', 'North', [
+      ['Sep 2026', 5620000.00, 6104230.15, 'Pending', '', '', ''],
+      ['Mar 2026', 5010000.00, 5620000.00, 'Pending', '', '', '']]],
+    ['784', 'MAHAVEER GALVANIZERS', 'South', [
+      ['Sep 2026', 1745600.00, 1690275.00, 'Verified', '09/10/2026', 'Verified', '09-Oct-2026'],
+      ['Mar 2026', 1520300.00, 1745600.00, 'Verified', '18/04/2026', 'Verified', '18-Apr-2026']]],
+    ['785', 'MAHAVEER ENTERPRISES', 'East', [
+      ['Sep 2026', 2865000.00, 3221940.35, 'Disputed', '', 'Opening balance differs by ₹ 12,450.00', '19-Oct-2026'],
+      ['Mar 2026', 2410000.00, 2865000.00, 'Verified', '27/04/2026', 'Verified', '27-Apr-2026']]]
   ] },
   { code: 'CENT11139', name: '', email: 'gmmaterials@centuryextrusions.com', customers: [
     ['500130', 'CENTURY EXTRUSIONS PVT LTD', 'East', [
@@ -297,9 +321,10 @@ function render() {
     </aside>
     <main>
       <div class="tabs">
-        ${['Ledger', 'Ledger Reconciliation', 'CN/DN', 'LC', 'BG'].map((t) => `<button class="tab" data-act="soon">${t}</button>`).join('')}
-        <button class="tab on">Reconciliation Dashboard</button>
-        <span class="proto-pill">NEW · REQ-01</span>
+        <button class="tab" data-act="soon">Ledger</button>
+        <button class="tab on">Ledger Reconciliation</button>
+        ${['CN/DN', 'LC', 'BG'].map((t) => `<button class="tab" data-act="soon">${t}</button>`).join('')}
+        <span class="proto-pill">UPDATED · REQ-01</span>
       </div>
 
       <section class="card filters">

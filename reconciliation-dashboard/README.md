@@ -1,7 +1,7 @@
-# Reconciliation Dashboard Prototype (REQ-01)
+# Ledger Reconciliation – Group-wise Prototype (REQ-01)
 
-Clickable prototype of the group-wise Customer Reconciliation Dashboard for Vedanta Metal Bazaar.
-Navigation: **Reports → Financial → Reconciliation Dashboard** (new tab after BG).
+Clickable prototype of the group-wise Customer Reconciliation view for Vedanta Metal Bazaar.
+Navigation: **Reports → Financial → Ledger Reconciliation**. The existing tab is enhanced; there is no separate dashboard tab.
 
 - **Customer Group** is a searchable dropdown (name or code) and must be picked first. Customer Code, Customer Name, Status, Region and Duration stay disabled until then.
 - Picking a group fills **Customer Code** and **Customer Name** with every customer in the group and loads the listing.
