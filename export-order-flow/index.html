@@ -4,295 +4,431 @@
 <title>Export Order Flow</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@500&display=swap">
 <style>
-/* Layout: Metalbazaar app shell — top bar, icon rail, working canvas; matches the live Vedanta UI */
+/* Single light theme on purpose: mirrors the client's light enterprise UI, like the other VMB prototypes.
+   Layout: labelled sidebar + slim top bar + work area; order screens pair a working column with a sticky summary panel. */
 :root{
-  --bg:#F1F3F6; --card:#FFFFFF; --fg:#1C2430; --muted:#5B6673; --line:#D8DEE6; --line-soft:#E9EDF2;
-  --blue:#0A5DA8; --blue-ink:#FFFFFF; --blue-soft:#E7F0FA; --green:#6CB33F; --green-ink:#FFFFFF;
-  --ok:#1E7B3C; --ok-soft:#E6F4EA; --warn:#8A5A00; --warn-soft:#FFF4D6; --bad:#B42318; --bad-soft:#FDECEA;
-  --info:#0A5DA8; --info-soft:#E7F0FA; --tile:#FFFFFF; --input:#FFFFFF; --disabled:#E4E7EB;
-  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
-  --f-body:"Roboto",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
-  --f-mono:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+  --blue:#0A5DA8; --blue-700:#084A86; --blue-50:#EAF2FB; --blue-100:#D3E4F6;
+  --green:#6CB33F; --green-700:#4B8A26; --green-50:#EEF7E8;
+  --ink:#14202E; --ink-2:#475467; --ink-3:#5F6B7A;
+  --bg:#F4F6F9; --surface:#FFFFFF; --line:#E3E8EF; --line-2:#EEF1F5;
+  --ok:#067647; --ok-50:#DCFAE6; --amber:#B54708; --amber-50:#FEF0C7; --red:#B42318; --red-50:#FEE4E2;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.06);
+  --shadow-lg:0 16px 40px -12px rgba(11,37,69,.28);
+  --f:"Roboto",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --mono:"Roboto Mono",ui-monospace,Menlo,Consolas,monospace;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0F141A; --card:#171E27; --fg:#E5EAF0; --muted:#9AA6B2; --line:#2B3643; --line-soft:#222B36;
-  --blue:#4F9BE6; --blue-ink:#0B1220; --blue-soft:#14273B; --green:#7CC452; --green-ink:#0B1220;
-  --ok:#6FD08E; --ok-soft:#14301E; --warn:#F2C35B; --warn-soft:#352A10; --bad:#F2867C; --bad-soft:#3A1916;
-  --info:#7DB6F0; --info-soft:#14273B; --tile:#E9ECEF; --input:#111821; --disabled:#26303B;
-  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark }}
-:root[data-theme="dark"]{
-  --bg:#0F141A; --card:#171E27; --fg:#E5EAF0; --muted:#9AA6B2; --line:#2B3643; --line-soft:#222B36;
-  --blue:#4F9BE6; --blue-ink:#0B1220; --blue-soft:#14273B; --green:#7CC452; --green-ink:#0B1220;
-  --ok:#6FD08E; --ok-soft:#14301E; --warn:#F2C35B; --warn-soft:#352A10; --bad:#F2867C; --bad-soft:#3A1916;
-  --info:#7DB6F0; --info-soft:#14273B; --tile:#E9ECEF; --input:#111821; --disabled:#26303B;
-  --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark }
 *{box-sizing:border-box}
-body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45}
-button,input,select{font:inherit;color:inherit}
+body{background:var(--bg);color:var(--ink);font-family:var(--f);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
 .num{font-variant-numeric:tabular-nums}
-h1,h2,h3{margin:0;text-wrap:balance}
+.mono{font-family:var(--mono);font-size:13px;letter-spacing:-.01em}
+.muted{color:var(--ink-3)}
+.eyebrow{font-size:11.5px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
 
-/* buttons & inputs */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;border-radius:3px;padding:10px 18px;font-weight:500;min-height:40px;background:none}
-.btn-blue{background:var(--blue);color:var(--blue-ink)}
-.btn-green{background:var(--green);color:var(--green-ink)}
-.btn-line{border-color:var(--blue);color:var(--blue);background:var(--card)}
-.btn-ghost{color:var(--blue);padding:6px 8px;min-height:32px}
-.btn-bad{background:var(--bad);color:#fff}
-.btn-quiet{border-color:var(--line);background:var(--card)}
-.btn[disabled]{background:var(--disabled);color:var(--muted);border-color:var(--disabled);cursor:not-allowed}
+/* ---- motion (shared with Product KYC) ---- */
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes logoPulse{0%,100%{transform:scale(.92);opacity:.85}50%{transform:scale(1);opacity:1}}
+@keyframes toastSlideIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+@keyframes modalPopIn{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes drawerIn{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+@keyframes backdropFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes rowFlash{from{background:var(--green-50)}to{background:transparent}}
+
+/* ---- page loader (from Product KYC) ---- */
+.page-loader{position:fixed;inset:0;z-index:250;background:rgba(255,255,255,.35);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:#3C4652;font-size:13px;font-weight:500}
+.page-loader.solid{background:#FFFFFF}
+.page-loader .loader-label{background:#FFFFFF;padding:3px 12px;border-radius:12px;box-shadow:0 2px 8px rgba(16,24,40,.12)}
+.page-loader .loader-mark{position:relative;width:84px;height:84px;display:flex;align-items:center;justify-content:center;background:#FFFFFF;border-radius:50%;box-shadow:0 8px 24px -6px rgba(16,24,40,.28)}
+.page-loader .loader-mark img{width:52px;height:52px;animation:logoPulse 1.1s ease-in-out infinite}
+.page-loader .loader-mark::before{content:"";position:absolute;inset:4px;border-radius:50%;border:3px solid #E3ECF6;border-top-color:var(--blue);border-right-color:var(--green);animation:spin .9s linear infinite}
+@media (prefers-reduced-motion:reduce){.page-loader .loader-mark img{animation:none}.page-loader .loader-mark::before{animation-duration:2s}}
+
+/* ---- primitives ---- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;border:1px solid transparent;font-weight:500;background:none;white-space:nowrap;transition:background .14s,border-color .14s,box-shadow .14s}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-700)}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:var(--green-700)}
+.btn-outline{border-color:var(--line);background:var(--surface)}.btn-outline:hover{border-color:var(--blue);color:var(--blue)}
+.btn-soft{background:var(--blue-50);color:var(--blue)}.btn-soft:hover{background:var(--blue-100)}
+.btn-danger{background:var(--red);color:#fff}
+.btn-danger-soft{background:var(--red-50);color:var(--red)}
+.btn-ok-soft{background:var(--ok-50);color:var(--ok)}
+.btn-sm{min-height:32px;padding:0 12px;font-size:13px;border-radius:6px}
+.btn-lg{min-height:48px;font-size:15px}
 .btn-block{width:100%}
-.upper{text-transform:uppercase;letter-spacing:.04em}
+.btn[disabled]{background:var(--line-2);color:#98A2B3;border-color:var(--line-2);cursor:not-allowed}
+.icon-btn{width:40px;height:40px;border-radius:8px;border:0;background:none;display:inline-grid;place-items:center;color:var(--ink-2);position:relative}
+.icon-btn:hover{background:var(--line-2);color:var(--ink)}
+.icon-btn.sm{width:32px;height:32px;border-radius:6px}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
-.field label{font-size:13px;color:var(--fg)}
-.in{height:40px;border:1px solid var(--line);border-radius:3px;padding:0 12px;background:var(--input);width:100%}
-.in:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--blue-soft)}
-.in.err{border-color:var(--bad)}
-textarea.in{height:auto;min-height:84px;padding:10px 12px;resize:vertical}
-.err-text{color:var(--bad);font-size:13px}
-.link{color:var(--blue);background:none;border:0;padding:0;font-weight:500}
+.field>label,.field>.lbl{font-size:13px;font-weight:500;color:var(--ink-2)}
+.input{height:40px;width:100%;border:1px solid var(--line);border-radius:8px;padding:0 12px;background:#fff;transition:border-color .14s,box-shadow .14s}
+.input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+.input.err{border-color:var(--red);box-shadow:0 0 0 3px var(--red-50)}
+textarea.input{height:auto;min-height:88px;padding:10px 12px;resize:vertical}
+.hint{font-size:12px;color:var(--ink-3)}
+.err-text{font-size:12.5px;color:var(--red)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line-2);flex-wrap:wrap}
+.card-h h3{font-size:15px;font-weight:700}
+.card-b{padding:20px}
+.pill{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:12px;font-size:12px;font-weight:500;white-space:nowrap}
+.pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.plain::before{display:none}
+.p-created{background:var(--blue-50);color:var(--blue)}
+.p-asm{background:var(--amber-50);color:var(--amber)}
+.p-ok{background:var(--ok-50);color:var(--ok)}
+.p-rej{background:var(--red-50);color:var(--red)}
+.p-gray{background:var(--line-2);color:var(--ink-2)}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:5px;font-size:11.5px;font-weight:500;background:var(--line-2);color:var(--ink-2)}
+.tag.zinc{background:var(--blue-50);color:var(--blue)}
+.tag.lead{background:var(--green-50);color:var(--green-700)}
+.chip{height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--line);background:#fff;font-weight:500;font-size:13px;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-50);color:var(--blue)}
+.seg{display:inline-flex;padding:3px;background:var(--line-2);border-radius:9px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:none;padding:7px 14px;border-radius:7px;font-weight:500;font-size:13px;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:#fff;color:var(--blue);box-shadow:var(--shadow)}
+.notice{display:flex;gap:10px;padding:12px 14px;border-radius:8px;font-size:13.5px;background:var(--blue-50);color:var(--blue-700)}
+.notice.warn{background:var(--amber-50);color:var(--amber)}
+.notice.bad{background:var(--red-50);color:var(--red)}
+.notice.ok{background:var(--ok-50);color:var(--ok)}
+.empty{padding:56px 20px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center;color:var(--ink-3)}
+.empty b{color:var(--ink);font-size:16px}
+.empty .ill{width:56px;height:56px;border-radius:14px;background:var(--blue-50);color:var(--blue);display:grid;place-items:center}
 
-/* login */
-.login{min-height:100vh;display:flex;flex-direction:column;background:var(--card)}
-.login-top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-block:18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1320px;width:100%;margin:0 auto}
-.login-top nav{display:flex;gap:22px;align-items:center;flex-wrap:wrap;font-weight:500}
-.cb{border:1px solid #D6336C;color:#C2255C;border-radius:3px;padding:8px 14px;font-weight:700}
-.hero{flex:1;background:
-  radial-gradient(ellipse at 20% 80%,rgba(160,170,180,.35),transparent 55%),
-  repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 2px,transparent 2px 120px),
-  linear-gradient(160deg,#2A3138 0%,#151A1F 55%,#0C0F12 100%);
-  padding-block:56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.hero-in{max-width:1320px;margin:0 auto;display:grid;grid-template-columns:minmax(0,440px) minmax(0,1fr);gap:56px;align-items:center}
-.login-card{background:#fff;color:#1C2430;padding:32px;border-radius:2px;display:flex;flex-direction:column;gap:16px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
-.login-card .in{background:#fff;border-color:#C9D1DB;color:#1C2430}
-.login-card h2{font-size:16px;color:#0A5DA8;font-weight:500}
-.login-card h2 b{color:#6CB33F;font-weight:500}
-.login-card .link{color:#0A5DA8}
-.login-card .btn-blue{background:#0A5DA8;color:#fff}
-.login-card .btn-green{background:#6CB33F;color:#fff}
-.login-card .btn-line{background:#fff;color:#0A5DA8;border-color:#0A5DA8}
-.or{display:flex;align-items:center;gap:10px;font-size:11px;color:#6B7280}.or::before,.or::after{content:"";flex:1;height:1px;background:#D8DEE6}
-.demo{border:1px dashed #9DB7D3;background:#F3F8FD;border-radius:4px;padding:12px;display:flex;flex-direction:column;gap:8px}
-.demo-t{font-size:12px;color:#3D4B5A;font-weight:500;text-transform:uppercase;letter-spacing:.05em}
-.demo-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.demo-row button{border:1px solid #B9CDE3;background:#fff;color:#0A5DA8;border-radius:3px;padding:8px 6px;font-size:12.5px;font-weight:500;line-height:1.25}
-.demo-row button small{display:block;color:#5B6673;font-weight:400;font-size:11px}
-.welcome{color:#fff;display:flex;flex-direction:column;gap:18px}
-.welcome .w1{font-size:30px;font-weight:700}
-.welcome .w2{font-size:clamp(30px,4vw,42px);font-weight:700;line-height:1.1}
-.welcome .w2 b{color:#7CC452}
-.welcome p{font-size:19px;font-weight:500;margin:0;max-width:30ch}
-.feat{background:#6CB33F;border-radius:12px;padding:20px 24px;display:flex;flex-direction:column;gap:12px;max-width:400px;font-size:18px}
-.feat div{display:flex;gap:12px;align-items:center}
-.feat i{width:24px;height:24px;border-radius:50%;background:#fff;flex:none}
+/* ---- login ---- */
+.auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);background:#fff}
+.auth-brand{position:relative;overflow:hidden;background:var(--blue);color:#fff;padding-block:40px;padding-left:max(40px,env(safe-area-inset-left,0px));padding-right:40px;display:flex;flex-direction:column;justify-content:space-between;gap:40px}
+.auth-brand::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(circle at 110% 0%,rgba(108,179,63,.55) 0,rgba(108,179,63,0) 45%),
+  repeating-radial-gradient(circle at -10% 110%,rgba(255,255,255,.07) 0 2px,transparent 2px 34px)}
+.auth-brand>*{position:relative}
+.brand-row{display:flex;align-items:center;gap:12px}
+.brand-row .mark{width:44px;height:44px;border-radius:50%;background:#fff;display:grid;place-items:center}
+.brand-row .mark img{width:32px;height:32px}
+.brand-row b{font-size:22px;letter-spacing:-.01em}
+.brand-row span{display:block;font-size:12px;opacity:.8;font-weight:400}
+.auth-pitch h1{font-size:clamp(30px,3.4vw,44px);line-height:1.1;font-weight:700;max-width:14ch}
+.auth-pitch h1 em{font-style:normal;color:#BFE6A3}
+.auth-pitch p{font-size:16px;opacity:.88;max-width:42ch;margin:14px 0 0}
+.flowline{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:560px}
+.flowline div{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:10px;padding:12px;font-size:13px}
+.flowline b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:4px;font-weight:500}
+.auth-form{display:flex;align-items:center;justify-content:center;padding-block:40px;padding-left:24px;padding-right:max(24px,env(safe-area-inset-right,0px))}
+.auth-form form{width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px}
+.auth-form h2{font-size:24px;font-weight:700}
+.auth-form .sub{color:var(--ink-3);margin-top:4px}
+.roles{display:grid;gap:8px}
+.role-card{display:flex;gap:12px;align-items:center;text-align:left;width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+.role-card:hover{border-color:var(--blue);background:var(--blue-50)}
+.role-card .av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.role-card b{display:block;font-size:14px}.role-card small{color:var(--ink-3);font-size:12.5px}
+.role-card .go{margin-left:auto;color:var(--blue)}
+.divider{display:flex;align-items:center;gap:12px;color:var(--ink-3);font-size:12px}.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.alt-links{display:flex;gap:10px;flex-wrap:wrap}.alt-links .btn{flex:1}
 
-/* app shell */
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--card)}
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:16px;min-height:68px;padding-block:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex-wrap:wrap}
-.search{display:flex;flex:1 1 260px;max-width:360px;min-width:0}
-.search input{flex:1;min-width:0;height:40px;border:1px solid var(--line);border-right:0;background:var(--bg);padding:0 12px;border-radius:2px 0 0 2px}
-.search button{width:50px;border:0;background:var(--green);color:var(--green-ink);border-radius:0 2px 2px 0}
-.top-right{margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
-.plant{display:flex;flex-direction:column;font-size:12px;color:var(--muted)}
-.plant select{border:0;background:none;font-size:14px;color:var(--fg);padding:0;max-width:170px}
-.iconbtn{position:relative;width:40px;height:40px;border-radius:50%;border:0;background:none;display:grid;place-items:center;color:var(--fg)}
-.badge{position:absolute;top:0;right:0;min-width:18px;height:18px;border-radius:9px;background:var(--green);color:var(--green-ink);font-size:11px;font-weight:700;display:grid;place-items:center;padding:0 4px}
-.badge.red{background:var(--bad);color:#fff}
-.avatar{width:40px;height:40px;border-radius:50%;background:#2F3640;color:#fff;display:grid;place-items:center;font-weight:500;border:0}
-.role-chip{display:flex;flex-direction:column;line-height:1.2;font-size:12px;color:var(--muted)}
-.role-chip b{color:var(--fg);font-size:13px}
-.proto{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--warn);background:var(--warn-soft);padding:3px 8px;border-radius:3px}
-.drop{position:absolute;right:0;top:46px;width:320px;max-width:calc(100vw - 32px);background:var(--card);border:1px solid var(--line);border-radius:6px;box-shadow:0 12px 32px rgba(0,0,0,.18);z-index:40;padding:8px}
-.drop .h{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;padding:6px 8px}
-.drop .item{display:block;width:100%;text-align:left;border:0;background:none;padding:10px 8px;border-radius:4px}
-.drop .item:hover{background:var(--bg)}
-.note{padding:10px 8px;border-bottom:1px solid var(--line-soft);font-size:13px}
-.note:last-child{border-bottom:0}.note small{display:block;color:var(--muted);font-size:11.5px}
-.note.unread{background:var(--blue-soft);border-radius:4px}
-.shell{display:flex;min-height:calc(100vh - 68px)}
-.rail{width:52px;flex:none;background:var(--card);border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding-block:10px;gap:4px}
-.rail button{width:52px;height:46px;border:0;background:none;color:var(--fg);display:grid;place-items:center;opacity:.85}
-.rail button.on{background:var(--blue-soft);color:var(--blue);opacity:1}
-.rail button[disabled]{opacity:.35;cursor:default}
-.main{flex:1;min-width:0;padding-block:20px 48px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.wrap{max-width:1480px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
-.crumb{display:flex;gap:8px;align-items:center;font-weight:500;flex-wrap:wrap}
-.crumb button{border:0;background:none;color:var(--blue);font-weight:500;padding:0}
-.crumb span.sep{color:var(--muted)}
-.card{background:var(--card);border:1px solid var(--line-soft);border-radius:4px}
-.pad{padding:20px}
-.page-h{font-size:16px;font-weight:700}
+/* ---- app shell ---- */
+.app{display:grid;grid-template-columns:248px minmax(0,1fr);min-height:100vh}
+.side{position:sticky;top:0;height:100vh;background:#fff;border-right:1px solid var(--line);display:flex;flex-direction:column;padding:16px 12px;padding-left:max(12px,env(safe-area-inset-left,0px));gap:6px;overflow-y:auto;z-index:30}
+.side .brand-row{padding:4px 8px 14px;color:var(--ink)}
+.side .brand-row .mark{width:36px;height:36px;background:var(--blue-50)}.side .brand-row .mark img{width:26px;height:26px}
+.side .brand-row b{font-size:18px;color:var(--blue)}.side .brand-row span{color:var(--green-700);font-weight:500;opacity:1;font-size:11px}
+.nav-g{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:#98A2B3;padding:14px 10px 6px}
+.nav-i{display:flex;align-items:center;gap:10px;width:100%;height:40px;padding:0 10px;border-radius:8px;border:0;background:none;color:var(--ink-2);font-weight:500;text-align:left}
+.nav-i:hover{background:var(--line-2);color:var(--ink)}
+.nav-i[aria-current="page"]{background:var(--blue-50);color:var(--blue)}
+.nav-i .cnt{margin-left:auto;min-width:22px;height:20px;padding:0 6px;border-radius:10px;background:var(--blue);color:#fff;font-size:11.5px;display:grid;place-items:center}
+.nav-i .cnt.g{background:var(--green)}
+.nav-i .soon{margin-left:auto;font-size:10.5px;color:#98A2B3;font-weight:500}
+.nav-i[disabled]{cursor:default;opacity:.6}.nav-i[disabled]:hover{background:none;color:var(--ink-2)}
+.me{margin-top:auto;border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.me-row{display:flex;gap:10px;align-items:center}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;flex:none}
+.av-customer{background:var(--blue-50);color:var(--blue)}.av-asm{background:var(--amber-50);color:var(--amber)}.av-rm{background:var(--green-50);color:var(--green-700)}
+.me b{font-size:13.5px;display:block}.me small{font-size:12px;color:var(--ink-3)}
+.me .switch{display:flex;gap:6px;flex-wrap:wrap}
+.me .switch button{flex:1;height:30px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;font-weight:500;color:var(--ink-2)}
+.me .switch button:hover{border-color:var(--blue);color:var(--blue)}
+.me .links{display:flex;justify-content:space-between;font-size:12.5px}
+.linkbtn{border:0;background:none;padding:0;color:var(--blue);font-weight:500}
+.linkbtn.red{color:var(--red)}
 
-/* catalog */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:24px;padding:28px}
-.prod{display:flex;flex-direction:column;gap:12px;padding:12px;border-radius:6px;border:1px solid transparent}
-.prod:hover{border-color:var(--line);box-shadow:var(--shadow)}
-.pimg{background:var(--tile);border-radius:4px;aspect-ratio:4/3;display:grid;place-items:center;max-width:100%}
-.pimg svg{width:88%;height:auto}
-.prod h3{font-size:15px;color:var(--blue);font-weight:500}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:rgba(244,246,249,.92);backdrop-filter:blur(8px);display:flex;align-items:center;gap:14px;padding-block:14px;padding-left:28px;padding-right:max(28px,env(safe-area-inset-right,0px));flex-wrap:wrap}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg)}
+.topbar .menu-btn{display:none}
+.gsearch{position:relative;flex:1 1 260px;max-width:420px}
+.gsearch input{height:40px;width:100%;border:1px solid var(--line);border-radius:20px;padding:0 16px 0 40px;background:#fff}
+.gsearch input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+.gsearch svg{position:absolute;left:14px;top:11px;color:var(--ink-3)}
+.top-r{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.market{display:flex;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:20px;background:#fff;font-size:13px}
+.market select{border:0;background:none;font-weight:500;padding:0;max-width:170px}
+.market select:focus{outline:none}
+.dot-badge{position:absolute;top:4px;right:4px;min-width:17px;height:17px;border-radius:9px;background:var(--red);color:#fff;font-size:10.5px;font-weight:700;display:grid;place-items:center;padding:0 4px;border:2px solid var(--bg)}
+.dot-badge.g{background:var(--green)}
+.proto-tag{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--amber);background:var(--amber-50);padding:4px 8px;border-radius:5px}
+.pop{position:absolute;right:0;top:48px;width:340px;max-width:calc(100vw - 32px);background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-lg);z-index:60;animation:modalPopIn .16s ease-out}
+.pop-h{padding:14px 16px;border-bottom:1px solid var(--line-2);font-weight:700;display:flex;justify-content:space-between}
+.pop-list{max-height:360px;overflow-y:auto}
+.ntf{padding:12px 16px;border-bottom:1px solid var(--line-2);font-size:13px;display:flex;gap:10px}
+.ntf:last-child{border-bottom:0}
+.ntf i{width:8px;height:8px;border-radius:50%;background:var(--line);margin-top:6px;flex:none}
+.ntf.unread i{background:var(--blue)}
+.ntf small{display:block;color:var(--ink-3);font-size:11.5px;margin-top:2px}
 
-/* pdp */
-.pdp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) minmax(260px,1fr);gap:16px;align-items:start}
-.tabs{display:flex;border-bottom:1px solid var(--line);flex-wrap:wrap}
-.tabs button{border:1px solid transparent;border-bottom:0;background:none;padding:14px 20px;font-weight:700;margin-bottom:-1px;border-radius:4px 4px 0 0}
-.tabs button.on{border-color:var(--line);background:var(--card);color:var(--blue)}
-.tab-body{border:1px solid var(--line);border-top:0;padding:20px;display:flex;flex-direction:column;gap:16px}
-.acc{border-top:1px solid var(--line-soft);padding-top:14px}
-.acc-h{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;background:none;font-size:17px;font-weight:500;padding:0}
-.spec{width:100%;border-collapse:collapse;margin-top:12px}
-.spec td{border:1px solid var(--line);padding:9px 16px}
-.spec td:first-child{width:40%}
-.buy{display:flex;flex-direction:column;gap:18px;padding:4px}
-.stepper{display:flex;align-items:center;gap:6px}
-.stepper button{width:38px;height:38px;border:0;border-radius:3px;background:var(--blue);color:var(--blue-ink);font-size:20px;line-height:1}
-.stepper input{width:70px;height:38px;text-align:center;border:1px solid var(--line);border-radius:3px;background:var(--input)}
-.stepper.sm button{width:30px;height:38px;background:var(--bg);color:var(--fg);border:1px solid var(--line)}
-.notice{background:var(--info-soft);color:var(--info);padding:12px 14px;border-radius:4px;font-size:13.5px}
-.notice.warn{background:var(--warn-soft);color:var(--warn)}
-.notice.bad{background:var(--bad-soft);color:var(--bad)}
+.content{padding-block:8px 56px;padding-left:28px;padding-right:max(28px,env(safe-area-inset-right,0px));min-width:0}
+.page{max-width:1400px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-head h1{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.page-head p{margin:4px 0 0;color:var(--ink-3)}
+.crumbs{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ink-3);margin-bottom:6px;flex-wrap:wrap}
+.crumbs button{border:0;background:none;padding:0;color:var(--blue);font-weight:500}
 
-/* cart */
-.cart{display:grid;grid-template-columns:minmax(0,2.2fr) minmax(280px,1fr);gap:16px;align-items:start}
-.citem{padding:20px;display:flex;flex-direction:column;gap:18px;border-bottom:1px solid var(--line)}
-.citem:last-child{border-bottom:0}
-.chead{display:flex;gap:18px;align-items:flex-end;flex-wrap:wrap}
-.thumb{width:96px;height:96px;border:1px solid var(--line);border-radius:3px;background:var(--tile);display:grid;place-items:center;flex:none}
-.thumb svg{width:84px}
-.ptc{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:12px;max-width:640px}
-.ptc h4{margin:0;font-weight:500;color:var(--muted);font-size:15px}
-.prow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) 36px;gap:14px;align-items:end}
-.sum{position:sticky;top:84px}
-.sum-row{display:flex;justify-content:space-between;padding:22px 18px;border-bottom:1px solid var(--line-soft);font-weight:700;font-size:15px}
-.trash{width:36px;height:40px;border:0;background:none;color:var(--fg);display:grid;place-items:center}
+/* ---- catalog ---- */
+.cat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:18px}
+.pcard{display:flex;flex-direction:column;overflow:hidden;transition:transform .14s,box-shadow .14s,border-color .14s}
+.pcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg);border-color:var(--blue-100)}
+.pcard .art{aspect-ratio:16/11;background:linear-gradient(180deg,#F7F9FB,#EDF1F5);display:grid;place-items:center;border-bottom:1px solid var(--line-2);max-width:100%}
+.pcard .art svg{width:78%;height:auto}
+.pcard .body{padding:16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.pcard h3{font-size:17px;font-weight:700}
+.pcard .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.pcard .desc{font-size:12.5px;color:var(--ink-3);flex:1}
+@media (prefers-reduced-motion:reduce){.pcard,.pcard:hover{transition:none;transform:none}}
 
-/* orders */
-.otabs{display:flex;gap:12px;flex-wrap:wrap}
-.otabs button{border:1px solid var(--fg);background:var(--card);padding:10px 14px;border-radius:2px;font-weight:700;font-size:15px}
-.otabs button.on{background:var(--blue);border-color:var(--blue);color:var(--blue-ink)}
-.seg{display:inline-flex;border:1px solid var(--blue);border-radius:3px;overflow:hidden;align-self:flex-start}
-.seg button{border:0;padding:10px 22px;background:var(--card);color:var(--blue);font-weight:500}
-.seg button.on{background:var(--blue);color:var(--blue-ink)}
-.filters{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;padding:20px}
-.filters .in{width:auto;min-width:160px}
-.filters .grow{flex:1}
-.fact{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
-.queue{display:flex;gap:8px;flex-wrap:wrap}
-.queue button{border:1px solid var(--line);background:var(--card);border-radius:16px;padding:6px 14px;font-weight:500}
-.queue button.on{border-color:var(--blue);background:var(--blue-soft);color:var(--blue)}
+/* ---- PDP ---- */
+.pdp{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:20px;align-items:start}
+.gallery{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0}
+.gallery .art{background:linear-gradient(180deg,#F7F9FB,#EDF1F5);display:grid;place-items:center;aspect-ratio:1/1;border-right:1px solid var(--line-2);border-radius:12px 0 0 12px;max-width:100%}
+.gallery .art svg{width:80%}
+.gallery .info{padding:24px;display:flex;flex-direction:column;gap:14px}
+.gallery .info h2{font-size:26px;font-weight:700}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 20px}
+.kv div{display:flex;flex-direction:column;gap:2px;min-width:0}
+.kv span{font-size:12px;color:var(--ink-3)}
+.kv b{font-weight:500;overflow-wrap:anywhere}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 12px;overflow-x:auto}
+.tabs button{border:0;background:none;padding:14px 12px;font-weight:500;color:var(--ink-3);border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--blue);border-bottom-color:var(--blue)}
+.spec{width:100%;border-collapse:collapse}
+.spec td{padding:12px 0;border-bottom:1px solid var(--line-2)}
+.spec tr:last-child td{border-bottom:0}
+.spec td:first-child{color:var(--ink-3);width:40%}
+.spec td:last-child{font-weight:500}
+.order-panel{position:sticky;top:84px}
+.order-panel .card-b{display:flex;flex-direction:column;gap:18px}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;height:44px}
+.stepper button{width:44px;height:100%;border:0;background:var(--line-2);font-size:18px;color:var(--ink)}
+.stepper button:hover{background:var(--blue-50);color:var(--blue)}
+.stepper input{width:90px;height:100%;border:0;text-align:center;font-weight:700;font-size:16px;-moz-appearance:textfield}
+.stepper input::-webkit-outer-spin-button,.stepper input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.stepper input:focus{outline:none;background:var(--blue-50)}
+.stepper .unit{padding:0 12px;color:var(--ink-3);font-size:13px;border-left:1px solid var(--line);height:100%;display:grid;place-items:center;background:#fff}
+.stepper.sm{height:40px}.stepper.sm button{width:36px}.stepper.sm input{width:70px;font-size:14px}
+.months{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.months button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:1px}
+.months button b{font-size:15px}.months button small{font-size:11.5px;color:var(--ink-3)}
+.months button[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-50);color:var(--blue)}
+.months button[aria-pressed="true"] small{color:var(--blue)}
+.summary-line{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:var(--bg);border-radius:8px;font-size:13px}
+.summary-line b{font-size:15px}
+.btn-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+
+/* ---- planner (cart) ---- */
+.steps{display:flex;gap:0;align-items:center;flex-wrap:wrap;row-gap:8px}
+.steps .s{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--ink-3)}
+.steps .s i{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:700;background:var(--line);color:var(--ink-2)}
+.steps .s.done i{background:var(--green);color:#fff}.steps .s.cur{color:var(--ink)}.steps .s.cur i{background:var(--blue);color:#fff}
+.steps .bar{width:40px;height:2px;background:var(--line);margin:0 10px}
+.steps .bar.done{background:var(--green)}
+.planner{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+.citem .card-h{gap:16px}
+.citem .thumb{width:64px;height:64px;border-radius:10px;background:linear-gradient(180deg,#F7F9FB,#EDF1F5);display:grid;place-items:center;flex:none;border:1px solid var(--line-2)}
+.citem .thumb svg{width:54px}
+.citem .ttl{display:flex;gap:14px;align-items:center;min-width:0;flex:1}
+.citem .ttl h3{font-size:16px}
+.ctrls{display:grid;grid-template-columns:auto minmax(0,1fr);gap:20px;align-items:end}
+.split{margin-top:20px;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.split-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 16px;background:var(--bg);flex-wrap:wrap}
+.split-h h4{font-size:14px;font-weight:700}
+.alloc{display:flex;align-items:center;gap:10px;font-size:12.5px;font-weight:500}
+.alloc .track{width:140px;height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.alloc .fill{height:100%;background:var(--green);border-radius:3px;transition:width .2s}
+.alloc.under .fill{background:#F79009}.alloc.over .fill{background:var(--red)}
+.alloc.under{color:var(--amber)}.alloc.over{color:var(--red)}.alloc.full{color:var(--ok)}
+.prow{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,.8fr) 36px;gap:12px;align-items:end;padding:14px 16px;border-top:1px solid var(--line-2)}
+.prow .icon-btn{width:36px;height:40px}
+.split-f{padding:12px 16px;border-top:1px solid var(--line-2)}
+.sum-card{position:sticky;top:84px}
+.sum-row{display:flex;justify-content:space-between;align-items:baseline;padding:14px 20px;border-bottom:1px solid var(--line-2)}
+.sum-row span{color:var(--ink-2)}.sum-row b{font-size:18px}
+.route{display:flex;flex-direction:column;gap:10px;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+.route-line{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:500;flex-wrap:wrap}
+.route-line span{display:inline-flex;align-items:center;gap:6px}
+.route-line em{font-style:normal;color:#98A2B3}
+
+/* ---- orders ---- */
+.subnav{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.subnav .tabs{border-bottom:0;padding:0}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.stat{text-align:left;border:1px solid var(--line);background:#fff;border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);position:relative}
+.stat:hover{border-color:var(--blue-100)}
+.stat[aria-pressed="true"]{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-50)}
+.stat .lbl{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink-2);font-weight:500}
+.stat .lbl i{width:8px;height:8px;border-radius:50%}
+.stat b{font-size:26px;font-weight:700;line-height:1}
+.stat small{font-size:12px;color:var(--ink-3)}
+.stat .mine{position:absolute;top:12px;right:12px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;background:var(--blue);color:#fff;padding:2px 7px;border-radius:4px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line-2)}
+.toolbar .input{width:auto;min-width:180px;height:36px;font-size:13px}
+.toolbar .search-in{position:relative;flex:1 1 220px;max-width:320px}
+.toolbar .search-in .input{width:100%;padding-left:34px}
+.toolbar .search-in svg{position:absolute;left:11px;top:10px;color:var(--ink-3)}
+.toolbar .right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .tbl-wrap{overflow-x:auto}
-table.list{width:100%;border-collapse:collapse;min-width:1100px}
-.list th{background:var(--line-soft);text-align:left;padding:14px 12px;font-size:15px;font-weight:700;white-space:nowrap}
-.list td{padding:16px 12px;border-bottom:1px solid var(--line-soft);vertical-align:top}
-.list tr.flash td{animation:flash 2.4s ease-out}
-@keyframes flash{from{background:var(--ok-soft)}to{background:transparent}}
-@media (prefers-reduced-motion:reduce){.list tr.flash td{animation:none;background:var(--ok-soft)}}
-.stack{display:flex;flex-direction:column;gap:8px}
-.st{display:inline-flex;align-items:center;gap:6px;font-weight:500}
-.st::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
-.s-created{color:var(--info)}.s-asm{color:var(--warn)}.s-ok{color:var(--ok)}.s-rej{color:var(--bad)}
-.st-hint{font-size:12px;color:var(--muted)}
-.acts{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-.act{display:inline-flex;gap:6px;align-items:center;border:0;background:none;color:var(--blue);font-weight:500;padding:2px 0;font-size:13.5px}
-.act.ok{color:var(--ok)}.act.bad{color:var(--bad)}
-.pid{border:0;background:none;color:var(--blue);font-weight:500;padding:0;font-size:15px}
-.new-pill{font-size:10.5px;font-weight:700;background:var(--green);color:var(--green-ink);padding:1px 6px;border-radius:3px;margin-left:6px;letter-spacing:.04em}
-.empty{padding:48px 20px;text-align:center;color:var(--muted);display:flex;flex-direction:column;gap:12px;align-items:center}
-.pager{font-size:13px;display:flex;gap:10px;align-items:center}
-.pager b{background:#2F3640;color:#fff;padding:2px 7px;border-radius:3px}
-.monthnav{display:flex;gap:12px;align-items:center;font-weight:700}
-.monthnav button{width:38px;height:30px;border:1px solid var(--blue);color:var(--blue);background:var(--card);border-radius:3px}
-.totals{display:flex;flex-direction:column;gap:6px;text-align:right;font-size:14px}
-.subrow td{background:var(--bg)}
-.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px 24px}
-.kv div span{display:block;font-size:12px;color:var(--muted)}
+table.tbl{width:100%;border-collapse:collapse;min-width:1080px}
+.tbl th{text-align:left;font-size:12px;font-weight:500;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3);padding:12px 16px;background:#FAFBFC;border-bottom:1px solid var(--line);white-space:nowrap}
+.tbl td{padding:16px;border-bottom:1px solid var(--line-2);vertical-align:top}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:#FAFBFD}
+.tbl tr.flash td{animation:rowFlash 2.6s ease-out}
+@media (prefers-reduced-motion:reduce){.tbl tr.flash td{animation:none;background:var(--green-50)}}
+.cell{display:flex;flex-direction:column;gap:4px}
+.cell .sub{font-size:12.5px;color:var(--ink-3)}
+.idbtn{border:0;background:none;padding:0;color:var(--blue);font-family:var(--mono);font-weight:500;font-size:13.5px;text-align:left}
+.idbtn:hover{text-decoration:underline}
+.new{font-size:10px;font-weight:700;letter-spacing:.05em;background:var(--green);color:#fff;padding:1px 6px;border-radius:4px;margin-left:6px;vertical-align:2px;font-family:var(--f)}
+.ptchips{display:flex;flex-direction:column;gap:4px}
+.ptchip{display:inline-flex;gap:6px;align-items:center;font-size:13px}
+.ptchip b{font-weight:500}
+.ptchip em{font-style:normal;color:var(--ink-3);font-size:12.5px}
+.qty-grid{display:grid;grid-template-columns:auto auto;gap:2px 14px;font-size:13px}
+.qty-grid span{color:var(--ink-3)}
+.qty-grid b{font-weight:500;text-align:right}
+.dbar{grid-column:1/-1;height:4px;border-radius:2px;background:var(--line-2);margin-top:6px;overflow:hidden}
+.dbar i{display:block;height:100%;background:var(--green)}
+.track3{display:flex;align-items:center;gap:0;margin-bottom:8px}
+.track3 i{width:10px;height:10px;border-radius:50%;background:var(--line);flex:none}
+.track3 u{width:26px;height:2px;background:var(--line);text-decoration:none}
+.track3 .d{background:var(--green)}.track3 .c{background:#F79009;box-shadow:0 0 0 3px var(--amber-50)}.track3 .r{background:var(--red)}
+.track3 u.d{background:var(--green)}
+.acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.foot{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-top:1px solid var(--line-2);font-size:13px;color:var(--ink-3);flex-wrap:wrap;gap:8px}
+.pager{display:flex;gap:4px}.pager button{width:32px;height:32px;border-radius:6px;border:1px solid var(--line);background:#fff;font-size:13px}
+.pager button[aria-current="page"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.monthnav{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:20px;padding:3px;background:#fff}
+.monthnav button{width:30px;height:30px;border-radius:50%;border:0;background:none;color:var(--blue);font-size:16px}
+.monthnav button:hover{background:var(--blue-50)}
+.monthnav button[disabled]{color:#C0C7D0;background:none;cursor:default}
+.monthnav b{min-width:84px;text-align:center;font-size:14px}
+.subrow td{background:#FAFBFC}
+.subrow .kv{padding:4px 0}
 
-/* modal */
-.scrim{position:fixed;inset:0;background:rgba(10,14,20,.5);z-index:50;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding-block:max(40px,env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.modal{background:var(--card);border-radius:6px;width:100%;max-width:640px;box-shadow:0 20px 48px rgba(0,0,0,.3)}
-.modal.wide{max-width:820px}
-.m-h{display:flex;justify-content:space-between;align-items:center;padding:18px 22px;border-bottom:1px solid var(--line)}
+/* ---- overlays ---- */
+.scrim{position:fixed;inset:0;z-index:100;background:rgba(16,24,40,.45);animation:backdropFadeIn .16s ease-out}
+.modal-wrap{position:fixed;inset:0;z-index:101;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding-block:max(48px,env(safe-area-inset-top,0px));padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));pointer-events:none}
+.modal{pointer-events:auto;width:100%;max-width:560px;background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);animation:modalPopIn .18s ease-out}
+.modal.wide{max-width:760px}
+.m-h{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:20px 22px 0}
 .m-h h2{font-size:18px}
-.m-b{padding:22px;display:flex;flex-direction:column;gap:16px}
-.m-f{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
-.flow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0}
-.step{position:relative;padding:0 8px 0 0;display:flex;flex-direction:column;gap:4px}
-.step .dot{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--line);color:var(--muted);position:relative;z-index:1}
-.step::after{content:"";position:absolute;top:12px;left:26px;right:0;height:2px;background:var(--line)}
-.step:last-child::after{display:none}
-.step.done .dot{background:var(--ok);color:#fff}.step.done::after{background:var(--ok)}
-.step.cur .dot{background:var(--warn);color:#fff}
-.step.rej .dot{background:var(--bad);color:#fff}
-.step b{font-size:13.5px;margin-top:6px}.step small{color:var(--muted);font-size:12px}
-.mini{width:100%;border-collapse:collapse}
-.mini th,.mini td{border:1px solid var(--line);padding:8px 10px;text-align:left}
-.mini th{background:var(--line-soft);font-weight:500}
-.hist{display:flex;flex-direction:column;gap:8px;font-size:13px}
-.hist div{display:flex;gap:10px}.hist time{color:var(--muted);min-width:170px}
+.m-h p{margin:4px 0 0;color:var(--ink-3);font-size:13px}
+.m-b{padding:18px 22px;display:flex;flex-direction:column;gap:16px}
+.m-f{padding:14px 22px 20px;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.drawer{position:fixed;top:0;right:0;bottom:0;z-index:101;width:min(560px,100vw);background:#fff;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;animation:drawerIn .2s ease-out;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-right:env(safe-area-inset-right,0px)}
+.d-h{padding:20px 24px;border-bottom:1px solid var(--line-2);display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.d-h h2{font-family:var(--mono);font-size:18px;font-weight:500}
+.d-b{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:22px}
+.d-f{padding:14px 24px;border-top:1px solid var(--line-2);display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.sec-t{font-size:12px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl{display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;position:relative;padding-bottom:18px}
+.tl:last-child{padding-bottom:0}
+.tl::before{content:"";position:absolute;left:13px;top:28px;bottom:0;width:2px;background:var(--line)}
+.tl:last-child::before{display:none}
+.tl.done::before{background:var(--green)}
+.tl .dot{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:var(--line-2);color:var(--ink-3);border:2px solid var(--line);z-index:1}
+.tl.done .dot{background:var(--green);border-color:var(--green);color:#fff}
+.tl.cur .dot{background:var(--amber-50);border-color:#F79009;color:var(--amber)}
+.tl.rej .dot{background:var(--red);border-color:var(--red);color:#fff}
+.tl b{display:block;font-size:14px}.tl small{color:var(--ink-3);font-size:12.5px}
+.tl .rm{margin-top:6px;font-size:13px;background:var(--bg);border-radius:6px;padding:8px 10px}
+.mini{width:100%;border-collapse:collapse;font-size:13px}
+.mini th{text-align:left;font-weight:500;color:var(--ink-3);padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.mini td{padding:10px;border-bottom:1px solid var(--line-2)}
+.log{display:flex;flex-direction:column;gap:8px;font-size:13px}
+.log div{display:grid;grid-template-columns:150px minmax(0,1fr);gap:10px}
+.log time{color:var(--ink-3)}
+.toast{position:fixed;right:max(20px,env(safe-area-inset-right,0px));bottom:max(20px,env(safe-area-inset-bottom,0px));z-index:300;display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--line);border-left:0;border-radius:10px;padding:14px 18px 14px 14px;box-shadow:var(--shadow-lg);max-width:min(420px,calc(100vw - 40px));animation:toastSlideIn .2s ease-out;font-weight:500}
+.toast .ti{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;flex:none;background:var(--ok-50);color:var(--ok)}
+.toast.info .ti{background:var(--blue-50);color:var(--blue)}
 
-/* toast */
-.toast{position:fixed;top:calc(80px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:60;background:var(--card);border:1px solid var(--green);color:var(--fg);padding:14px 40px;border-radius:4px;box-shadow:0 6px 18px rgba(0,0,0,.12);max-width:calc(100vw - 32px);text-align:center}
-
-/* responsive */
-@media (max-width:1100px){.pdp{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}.pdp .buy{grid-column:1/-1}}
-@media (max-width:860px){
-  .hero-in{grid-template-columns:minmax(0,1fr)}
-  .welcome{order:-1}
-  .pdp,.cart{grid-template-columns:minmax(0,1fr)}
-  .rail{display:none}
-  .sum{position:static}
-  .role-chip{display:none}
+/* ---- responsive ---- */
+@media (max-width:1180px){.pdp{grid-template-columns:minmax(0,1fr)}.order-panel{position:static}.planner{grid-template-columns:minmax(0,1fr)}.sum-card{position:static}}
+@media (max-width:960px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{position:fixed;left:0;top:0;bottom:0;width:272px;transform:translateX(-100%);transition:transform .2s;box-shadow:var(--shadow-lg)}
+  .side.open{transform:none}
+  .topbar .menu-btn{display:inline-grid}
+  .topbar,.content{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  .auth{grid-template-columns:minmax(0,1fr)}
+  .auth-brand{padding-left:max(24px,env(safe-area-inset-left,0px));padding-right:max(24px,env(safe-area-inset-right,0px))}
+  .flowline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .gallery{grid-template-columns:minmax(0,1fr)}.gallery .art{border-right:0;border-bottom:1px solid var(--line-2);border-radius:12px 12px 0 0;aspect-ratio:16/10}
 }
-@media (max-width:520px){
+@media (max-width:600px){
+  .market,.proto-tag{display:none}
+  .ctrls{grid-template-columns:minmax(0,1fr)}
   .prow{grid-template-columns:minmax(0,1fr) minmax(0,1fr) 36px}.prow .field:nth-child(3){grid-column:1/3}
-  .demo-row{grid-template-columns:minmax(0,1fr)}
-  .flow{grid-template-columns:minmax(0,1fr);gap:12px}.step::after{display:none}
-  .login-card{padding:22px}
-  .plant{display:none}
+  .months{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .btn-pair{grid-template-columns:minmax(0,1fr)}
+  .log div{grid-template-columns:minmax(0,1fr)}
 }
 </style>
 </head>
 <body>
-
 <div id="app"></div>
 
 <script>
 (function(){
+const LOGO='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAYAAADDPmHLAABCkUlEQVR42u19eZxcVZ39Od/7XlV1Z+k0CWvYZVHAZQybJIBhEURnXLsFEQKocQ0u6LiO1T0zOm6AElzAYQmySDc6yrizBEjCJogo4qiA7AmELJ2lu6veu/f8/nivqqu3pDub4I8HfIzp6qpX737vdznnfL8XePF68XrxevF68XrxevF68Xrx+v/u4j/UtxEoAB0d+ffqGPLz/P93dEAk9OLy/6MsukBo/MYs/YNtgP+fPEC5DBu6kz92++FN6yvFCcWQtARDq3lMkjNngkh5A/o9wjpX1NPnvebOVSQ00vuM1Wj+EbzIC34HfOqGGS291nygiJeb9HIQewPYHdBkCZNImISQLRirAtZB+ivIhbHH/5x3/OK/NBpVZ2f22hc9wPP8Omfhaw5K5E6SdCiBl4PcmcQkRgRBKAgasj/J7BsTQAjql9ddAbiUFt08f/atT27sM9u62tyOLct2h+klxuTZC4676/cvGsC2XvhfvWJCGk96VwD/NYptbxDZYgdAQZIAEIKy9R6cLuQ/A2CEWWTwafACHqLwC3h/9dJVd/y2uw2hDLCTuTdQZlMfuvHIVzvThwAdL2C5gn3gwuMW/aatq82627v9C9EA7IWU7AFAJZq0TwDmFJvd3mnVp2nFpz4NQT5behIkYMwcwaB/6j8DTAFKkxAguCiy/V3BPorILt9p+1nvBKFOItQTyzxXMPMvE/R6F7vdCk3Rq0nNBaDu9m5fLr+AnuUL2QN8cOHRE2P5s0B8ysW2SwhCSAUhWzBy3N9LUrbULqb5RCsJXaLAy+cft/hBCKx5g4/cdORRAeFKc7arst9aoxA+WfATrjn3hBvWlwXrAJTfg140gK3lDATOu/WIWQz2TgKzIeztChYrCMELECQiTwKY538b/74CgjMaI8In4QkFdcw/dsmlNQ/06cWzpvRW8UNXtNm+6j3NHILWiVigPvfl+ScN5BES2AFwGBaBBiyiISS9aADju2cBwJyFR5cmhHCoo46nNBvGvSHtYJE5c8yyvtwoQpYUBioPCKMbl0iEqGAuqYZnIH0WleS6+SfdvWbez08ssrTuiqho7Ul/CABojpTkAVwHb5fEPrn/3BPueHa8oe3vZQj8u3xmucwh2yF/DByz62ws2ebeMyOOlk2cGjX76UHag8TOEHYH8BKAu8CwO4J2jGKLQgBCUIDygmAUY5AQnKMFaY1C6DaLL5R3S2WV/4hie29alUhQgmigOSKkWgPoIQi/D8QDzvTXNMFy56wqs6BUsTNRQOqY9vT02DOXvvn2tfXv0wFta0PYxgYgIkNrx2YgnR3a4Os3snvautrcrpOfaFHR9g6eM0GcKPLwqGBTAGS5g5dEiCMkxBJkEUkB3usSo+8Osn8h8T6QrvFTJcgcaVGWaabVAEk9EFeQ6hcYKBVAOlAe4jIQf1Cw20rF9Bdfm5UZQq3i+AczABFt3Ybudg8Arad17a4Cp2RlSJpQTT0A1q7Y7b716OwMQ7a64cEDiQPaBHTUjGKop6CUcwAd5cypoHMousePLDxsDx/i1xg5G9LhgPZysZsICj7JU0EOzwvMSAWtBPS/EqYQPJGGkgQNeob13AMgYTTWsYeRruAFisuFcKsCr0W1+uv5J929pixYvQR9wRtAuWy1RZ1y1nV7wIcvyHgcFSZJNFKpxHUkVkl6ErDHjbrPI9xfXG9/Wt7dvm5Uoyp3EOgAHuwmDvijhnmM3EOUO8BGhK9chq068rDtEewgxDYb4r/Q+PIMPFIgaUOtgAZIqgJcmpfPu270GdawqEZDrO3wrGKhGcGICGno9wFXl1j53Ndn/2bZtgoJ3CaL33Zu06SJu7U52TxE0cEIAVAYuAUSpKEG3SitAtBSQA9C/D0c7g1p8legaQXJFT17/m7NME/R+JmjhA8J7BhiDADwkVuOeI08P2fO3mARkVYDMNwfiAaGoEDgToA7mePeIdVmPcXMi0jmzHIY62ql/tz5x99x37YICVvPANq6HLrb/ZR3/eCViN15sPgYQECahNxpN7jO2kKphtkazIEWZYyLTwGfBgHrCSwHtRLiKiE8B+PDFB6SeH8P1v8fFpzZPyx8ABjiIbKQAbAze8T60K+P2MUivoXgOwEcQSPyxbYRVu06kCsFnEaihABsqLIYqyGQgIuMwYen5cO3VE0vnH/S3WteeB5AIkhtd/o1rwsWfYdxaW9V+/KFHxNipvxfgRQgA/KAai73Fjbw5OQBnzwHYBHIH3nxrrWTmh/H/JMqo3uITtUtrmGXfeiGQ6Y6VzyHxIfM2eQ0CYED9ywaGVK/gLRbQbw3Ktprkv5Qq+k3+3kKCFFs5hPvAXyqldG3Omff2r+1PAG3/PtlG6zljO63kvgOLNoBaeJBuM1/Nsq9hZAZRkNcdc5IB/mqB/AcgL8JeAjC40b8HsCDTCqPrbzqtIEdVZahEwIoCWzvhnW3w5fvmdG8Yk3pNCM+7iK3n0/C4MWphp8EhmucuK+It4B8lZHmvQIzI9hcbxBopBR+AukT84+9/WFlOcPz3QCyMm/Kmde8UYqupEUtCIkHNnvxx+pElYUPA80BjDKP71OEtNpL4P8gu9EcfrTy0rffXTeiti6HrrYAUo077SM3zzosQJ8n8HqAJkBRREuT8HsDvyvTH4K3qpneDOD9LmKrTzPAKTdS1Emp0bxDY6KoWhgkzGAh6CbJPnvhcYvu3loGYFvWmCjMvSiWXLtFhRb4yjZa/CxxyMKLBJ9KSSUo6fWq9nn5qmjWzKj4ahYK/xqC/rflzOsubz3juhN2betqQne7BymUy1bL0Mtl2DePWXwXVPioxF+72AhlqCKBvYNh/6hij1143KK7+yf3/ScU/iNNwgOA0rhkFpecRbGZi0jW3nWkfzIQiVFsFhez34tLZgpYRfLhQkGrXyg5QAbRXnRPPOWOh/8LdB+HQsjiN58HkHPuIQDAnNFFUFIJIH4L2E8qIVzWd0X7U41hoa0Lrrsd/kMLZ77WxCuj2KanVR9cZOZT/QYxzrjgyMV/IqFy1wGFtTu0HFhN7VAzvhrCfiB2gzQZxGRzVhzprnwaUoJrAa0G2ROkZQQeZcCdLvJLznvtnQ/zhVMFZCGg5czrjmMIFyMu7QVfyQh7cOPAhsCsOuBWLlGlPME0ugLgIqja97sAP3fN5Sf/pp4sdnTW6aR5t8w8h+JnAGyXm3q/wJPnz150fRvarJuD9QBz75nRXFpVmqYIuxBhT3q3h8hmUDFFgaoEYJ0YnmXQIwXgKVlhfdLXtHb+Sb+sbKttEW1hexIA9IS1iyep+Qsu6fuwaAfSool0sRtYUw78UXkyLkHK8YHggVoczSLLFjYK1jgAKa0Iviq4+FXmcf2UM7suZIwLV3W29wAydFAglP7Sro0L2hfQHInFqGClpBoOA/GTA3SAALBczu6vsxO6+OB7ewE8nv93Z5Zzlg233GIPPreDNiYgqWkP+UIGglrndrVY1e2XKplOsgXgJACTRE1CsBbAtxLWAqAkqpliC4jtAUyDi7NsrGYUGXDkB3MA4hYLL1KAi4wWQ2n1LvnqB3q+/8770Nblygf8UZ0dnZp325HHIw0XmbM9zYg0Db8B3Vvnz771ybYuuO42hHqpJrDcMfB8R9Qa1l7TAaBjBIq4JnMHCJQH4O2G9+7shLAZ2oOt6WbHQvwMuqae9d+TkurkHV3MfSF/VBBnktgN4PagTWBUyL6qQqNhCGh4uANhhJtgBAIZGBVdSCuPCXjvmsvbbyAAlcs2d9ZPJ5WsdG1UdCcklSAzVIPH+ZWEF1z8+kVLx0BQcXBZO3IYHFAxbH1SiFtmoYe9pQbh9TU07tk/EjscOPClDmgTOuqFkkb0IOuxEyLu7BV2BfByGV8KYS8Q20GaTIsmMSoMDiMhBUJQHeIZvzF4uMgphPVQOC+yNV9bcel71gLAvJtnnlcouY8l/d6TdBJ6JSyS8F1WqzfXkLsa7JyRU50YTRiS/X0Z6OjEUOy/vPDo0qo03QHivnLag8b9IOwooZ/AX2D6TevyXe7ubO+uokEnsS0MIKNsR8PjG4magW85GpM3GEQqd2ycCp5zWWlisTAxTt1O3tuuNOxOYR9BryS4t4Rd6OJmWg4jh5C5ZuW5xFjAGinAzBiVoGrfDRO36zn5yfPeu+qDNx91Zux0iUJevhN0sSFNQo+CbqTDVc2Ot3z5yMWrNuXBzvv5icUQr9uD9AeQdgiBmSAOonGqiw3MqlHICz4JzwaFLz+zYvoF3e3dflNMgJvoNeofs/Pci5qr6Y4uRFUroZQsXdVfqdG+GySJaoFvg0ZRMySgTgl3bqCaaOtyLc1+t+AKBzqfvhrALJCH0hWmwEVA8FDweZKpsPFQIUEMLDQ7+HXfWXXpyR88e+FrDlJwtznHVu+l/GHIHI0G+CQsJbAE5H0gHoew1Bh60sDEOVcNaaCnGDsX6L0FsgSvJsbYIaTcl4a9FfRSEnuD2N5FVpQy6lhCIKUsQSSigplPwjKB759/zKKfbApcvEkeYI85l5V6rHScFJ0M6Z8INNVKI1DLBHuC0lIYnw7AcsIvN2JZIntm3WXty0c1isZQAaAeLgZpARp/pyG8HPBHDfVIe8xZWOrxz+yvyA4hcICAGQD2IDSdUSmSryIjEmCjPwsJsEDnXFINn/nA+867olK1H0RFd2TSn9ap41wbABeRdFlfgk9CCqICsELJg/S1wia3egKICEQCSmYsuIiZSjVPb0JA3dOMBBlHsVmahvsJnHPBMYtvGq8RjN0AsuQK27d1T0iaw+dF9wGLC5Prd1hPXKwGgUIhBUIKAesIPQdxqYB7QdxPC38JUeGpyavSp5/sbu8blwWWy5bJyIYLQwbJzYaGKIkT33n1VFeMX0GyHdAcRqWS0kpuCKOBVhLN4FNL99jzL5876cTrtuuvTPi0sgR00HPMZSU5ygDWtOgjPm01VsLK/x2oAMYqZI1is1AN3VHadOa5J9ywfjxGwHE99M7O0Dqn69OI4v9S8ICCH96UmRM1EusJWM7e1cFsCQiph7BSwDJAq0CuJrAS0IogrjKiB7IeIV1rwZ4JkT1TSnqfeebK09cPo53rSWWd8q2RRwNJ6LDwIbbMufatoJ1N8DBGxaJ8NZfpjGgEAVYwY99f3/62S77e1NT3DovjY9KqH5kyznF+jCEsDzQbbkKDKxCcI0Oix416wzeOXfLH8bS4cTyLP/n0a15C2iK6eGeEdKw4fwOLV8eLmPfmgHSAWeaFWedCMiOpUb1ptQKyB8RDEO8WbUmQ7l97+dseGjVRrEvJBusAskQTrBvD3Iviluq0lxPpaYKdRXOT8+82UlgIYsF2mPbEV9/W9r0Hete2fJuGCRnQ+XdSWAsBBkCqBvKfL5y9+MayytbJzi1lAFnmvMecy4o9aP4GosL7kCZhjLz+2AxjQ+5KMpjlXsRlv+aTqoS/gfgzxPtguj8Qy8ywrNTf/+wwLzE4bGi0Sma707tfFwzfZaFpL1V7a7gAGysDxkVLq+nik17f/dmddnz836KmwvHV3tSTdNt03TWQG0RFQ9rvl4N8/QXHLL53PJpCjvE1aj3j2k+J0Zcgz22BIo7ydXMyhwY60EV5+e8BnwDQs6I9g6BHYbof4G9NeKiQ9j9SN4pBnqEze7+yiAe7ie52v91p17wsuKgT4FthdPBpABvUJ2aUx7qJE3o++K7TvtXb1zvxOy7G9mmigLw1bavs8yyg5cwxzFz2McGHCsBHIHxPlWXfnn/SQ+PiETgWNG/Hd10xoRKVFjMqvCpj0Ph37oOrcf+1hElZgmEuCyn57Sntl6RlJO8H8L+VgJ/0XdH+1KiIZYOAtXVO14mBvNRcvLN8vwfM1Vwu44KFpLrgyCNu/OBe+/zhbTT35Si2XXyDzDw3V2LsrWoDi1ynQAZ+n0aYyywsrQZBehTkbxC40IphUcuNS/60Ka3tYzKASR9aMNXWle6li3aH99oC7n/rRMOMu2sMKS7TFroMEFL4m4QlBi4J0J09C9p/V08ku9sDANUxik6GljO6jiF5JVy8M5JKTZIRGMUmn/x59erWmV3/c/zqW286us2YvofkDHOcQst3Z1CGVAsDkvEhlVVNLJLJx5mnQ3kVldcEOQawFsRyQn8BeKcH7ywl6X3j6kLaVANondvVEqq4iy7eJxN1KmpMXbd9SNgkozBYBLoYUEBIq2sJdaWV5NPrrjn1uQFDaAsAVRO1ZiHBrqArHKy0GrKlIqGQmPkjV172zrsAYu7Co6YVffJyEQeDdjCF/YzYOUhTaYwslzRqeG0BeQlEVcJaUs9CWE7iEQU+RuJp77QCwT+DJH66aYJ/rt5EUkuptemsIcfwc6Gty7VMxFVWnPQOpBXkJWBDEZurW4Zq9fISOn8b1gnOv585DEDC5gwuhtLKbQL+s1XrFz1WVxTnYeHohRFunZ1OPuMHhxij2yEZEAhRjEsWqn0f77niHd9AuezQ2ZnWPmZu14yW5u2aX+KpA8XwMoK7AdwOwmQSBQBBgghVA7CaxEoEPUWzJ7zXX6IofTRMb106f79RdAEaKH0GLbxEdHSwDpiVOzYA14+vClDr3Ot3V7X/wwIPA7QvwVZILnOzZgPxN0dX8zIOCIO5/uzvQ4N9sYHq38aJJcWoYAoJANwL6fuWVC5bedVpa+phoa3L0N3up8y59nssNL9HSZ8HAMbNTpX1P1x9xTvejrYup6720IEyh3Ykfez2w5v61nISS1GRfVa0YjUyxh5VwBg8mVbSQlRd493aBbNvrQyCDQSWUQO2OnMwtE4YDXAnDx7IuqZxI9D9FoGCd3j3T3bsU2WKS1kMEQpIsR0VdoXD9gAnGTBFwARAUyC2AGoBsDNoU0A00RUG1kA+N4qQB70RysIMct86hpJ5hUwZZIaQVH4ZJ/1nPXfVaUvR1uVqOMJOZ/5iWl9Y9yNG8Sz4xMMiJ58+bb04YFV3e08tZIyBEt4o4rphOjgHt0bY2U2nd00vWTgoyPYgVEqR3LtuwbuWbMgIxgEFi+hoAFDGcrV1uR2L/aU1hailkMQ7MsL0EPxeRrc3oD0E7A1gBwiTSE6Ei/ICY4gASH4g7GSJ0VC1EDfbDHJNAaOiU1q9W0g+03P5O2/Oq4MInZ1p65wfzAx0vybYDPlAFxuC/453+vyaS9pXDsohRnDXHR3Dn3ddBDLiguc/qu3yWqKaXxNPuWpa3BTv60N4hckdBuoogbsQKkAgzJYppGf3LDj5h6PpM7iJ3jOLNTWq98Huwe8zUp/eCNfUs/57UlqdPA1MpzCKJjNgojdOsBC2BzkNwC4CdqK0i4DdSLaCLNDiPA/zA2ohKdQh6M0zDE9XcPJpIMJXV63H59Hd7nF0OcKtnWnLGdfealHTUUr7M+7AFQlfvcdYmLPysjc/OBye3gCR1UiVD32GQxa7djXP+elOBfYdJuo4SEdB2N/iYhF0kE+AmkeFxKhEJZW/Cf6YngWnPAYNz9G2dswdyHvrXxgYi3E0Xju+64oJ/SjtwIi7AmFviAfB8HII+wjYieQEumJD4l/TFfoGvGBc6mQP0CEqAEnfpWnRf2rdxac+h3LZWv72svOtOOHsPBdwADzjklO1/7cpwtk7TZ58z0MjdSRtytXWVWiZ1jwB6/r2NNP+Ag8RdCiIV9DFk4ka4aZQI6Aa9JMAEOgKLoTk4z2XtZ3fiHOMzQAaUbOODtV3fY2C3dB1wB/V4Oc0crXYIAAZ6T0PaFNNoj30Rzu/8aLmddMmTneMd0HwuwvRS0DsBeglJHZSwI500USay3xrRvSEsSuE8iSxUDIl/fc5wykrLm3/85QzfvBVxs2fVNI/wIVIAS42Ke2n8HuB9wJ6iIaHArGMFSxXET0TXKk/9K5mv/OxccqkoGSqBdsxRGESFKYYbTvvNZXGKRSmCdgJxK6QWmluEl08YNwhNPRYcrSmk8AoZkiTRSH0vXXt9+esGBoKuLHsfysl4Fk+UXOBI1O7wxOf2utHMYraaye/u7s1Ctgp9dzViH0BvRbEbEbFqZmbDH4Qgrjhe01ZnBCFau8SR8wNAZ2Mi29X0j8YERUCjEYXAxYBIWRGp+AlPUtgGcDVQjDCmkFsB2gqwCl1ttRcxncQ9dCmEAaHuXGFNwl0VAg9EtvXXNH266FeYINv0nr61QcGRm+gaW8IBYkJgD5Aqw1cL6KKAE+HqqSKwXqTkK5z4HoE9ATTOieXxIW0UkmbKpN6k8oGuf+hwyA2ODpmqFpow3nHlNOvO0oWPgTgRIubJme5ZRXwfizEVgBoku4nsQdoUwba20eBqLMGWcuR+7xEbqDBBqud0dCroGEYyqbnM7VMOUjh/T0L3vG9oQYQjRi3514UTam2vk9g2eKmaTXR7WBYuwZTa6DYVIALBoQAmKqEEkFJNY0qZLJu3QSsaJnT9Qyp5yQuNeHJYPhzZOn/rVgbPYPOIVKyzk4ME3vUFUD5Bw8suoBODKuPs4TKr77i7behXF7c+tiBB6raexSMR0KYjbiwQzbPBRvqXDZAootemSVZoxVCZAN6P7CwPoXgNVS7Mjhec/i8Im4275YBMqQRLG68DKzx/mdcd4JRP4ZFJaTVdKNustFi6yKQBt0lmbk4sEExFKCQQt6vJfEwpHsA/AFmjxiwPKFWS1g5Naxf+9iej1Y3hmiN2PY91HiGvMfkd3ftQ4/zGRXfCHkgTWtNnbYBzGCzu3+3IdYVQCOgSgias+aKd3RtJARkdeeUM7ovYlR8r5LKZrR1S4McUc01s7EnXwQda4la9lse8L4KYm0+EGI9gF4Bywk8JcPT5vV0qvAYIvdIAYWnV1z65rUjhhIAOUI24A5rXiTXEE4968eTUl/9AMn3wkX7AATSSthEOfnzZuWzcGLGKIbS6uXB4Zw1l7Sv3EASOED8qMpb6KJXKk22AfPX0LRZy2ppmcqq5jnqU55rs/88lFa8gOUUHhH1kIJujyO7ZcVaPDSiKnnAQ4ShHg8Adjqza/s+hDdS9iFGxRlZ1aCN5Af1mP/8occFwmhwMeDTqkL4jptc+cLK+aetGSmx5zD3P/dHL2ElvZdmLZDX32cX5N6jcXTM0IEQjXMAQMgnUPBPkvy/AP4W0P1O4bFKGj/SW/XP1o2iXLbByeJgaHXiKVdNc6XoPyn3XphZJggZZYFrniukw9VD24LYqoWrGg9jLmM6k0oviPsAXtpTWPl9XPy+ZONIYFmGToYpZ/3gKHhbmMVB6Xkc7waoXuQJnDnQ4oEfpxUvcBmgRxFwU5C/au33T/nLILSuDt0OHmU35fSr/0UWXUAX74GMBrZhYJH0nMAqzXbLPVNNWbw1QLY8iWQAYLCImc6hCkjPSVhK4gEJ94G4F9Xkvp6rT121sZJ+oArIociQqmQGewHMOmZdTlFfEh8UfOPcH0dz02luOmgzUe09pWVO11ciV+galDeUy4ZOBnTD1zzC6s53Xj/l9KsfBfkjRsWXKO1X1paDAOdMIV1qhnMqTBcXfPR6El9n3DQlCx0BUAjDvNYAcNOYHGF4rjSSx8v1DBY7hQTy6YMIya+FsCgg/sPEFSueWvrT9/WOgOVgQ3jOsBAw4fSrD4zp7oa5Ul7uvCDHoA/2EvmTdrEBgkJ4gPA3wLubi+pb+MyVp68fliPkBNCkd119mEXxj8zcLvJJtoyMiJAsJ+3YVZe3/wEAWuZ0vxbExwAdSmAao2IEixoIrDCYEoeGl3n1nMcGqiUQCAmUCXFWQPidqF/HPlz/XM2bNS54W7eNisyOUEkNSwIx7+fF1rXrfoi4+Q2q9oZRKU01NoVy4D047O35PDKHAIp0BcKirAxNq4s89Jl1C05eUg+FHTkgU14YoXN22jLnqjfTStdBgUDIwRkjGN60erc//hRLd3FZnAWaT/3+znFU3NEQXiraPgKmQ9qd5C4CtofQQqAIwiSlIAOyUfcpgH4SayUtJfmwhKdBriKxLHj3F1dKl61ahacaklyircvqINhG+yo3lAQ2vGDinB/MjGjfAO1gRoVBI9nqoahuFwMT3QZEIANDHwZl+QMiTg43mm1oLDVlEGR0RcpXVwj4NlJc1nNl+98GVQg5z98y59pfWqH5hGxTUIybXUjW/UfP5Sd/YUA30Dl6r/68nxdb1vTsTHN7MGDnYGhSQB8REmPUR2pFNVR7LIqfXbMGPRvsrxyKeaj+DOufPe3UH+7sGfYKTvuR1hJC5Y41V5x695jp4Gmn/nDnJA6vMYWDA206pIhEUUCJQLOkIkBHwLK/0wSRzRCaQEQEYgAxzHGQWwPqbjATBjUaTlB9DNwg16itV5NLIZsZFENp9TlB17qk8uWVV5325ECi2O5b5lzzWlj8E0KTIAVERYek7+7VvXbEAHHFUOc5avTuxhpaNwaLD6WVa6RcHeUc0B9MbuvazibyCAHtlGYC2AMWuTxZXBGkU9Zc3n5DY/nLTSaC2rocDtieWDqJO+PpeL3vL3mkcaEaFVOXFE3xZITQCkOLnJVciqZgnApoFwI7SdgRxE4UthNRotQEF0W0BnRaIVfG+gEhCBtdTx2N5uYZSQ6cmDPGJYRK7/1gOKvn8pN/i7Ly3cYw5fRrvs5C0zlKqhlQRFOA3rXmsrZrGiupUWnxRkp8tGvUbunRlUAtc67ZU3QnGNQmcKZFpZKUAj6tfTfP4sRIlfX/s3pB+9sanp24QVi3vSGhGDytezNLBLF1bvfkUPGtgJtCQ0sIYWfSdiG4k6SdQewGYHsAkylMhbmmgfl/NmACChl6mLV9q64A3jQ7yIZZRbFD8M8ghE+uXtD+/VpeMPk93S8xjztgbhq8DzAzSWsoXexcev6KS9/59IZmFY/n+SA7AnUQalnTCEwqYK8owj4i/gnAqwQcQnB3uijXB4QwaA5CTgsrJPetDutnZuN0xcHzesdNMgyrX1C/6QEhwAhKlyGSqQ2IISaVoklmlUlwUSvAKUz87jDsLmJ7Ck0CmyntCONuAqbTogkgAV9tmEq2SXW5h0UuO25En19dWPm1WpLXckbXTy1uekMmCJGBRkYlKOn7C+jPWX3ZKT8dlcYedHWMcedn14R3/2THKFTeCPHtFGbA2fZ0cR0Ey8AojDzzQAiIYoNPHmIBB6+6uL1nbAagEQbzD/xhc7zA6C5xo9qA4bul5Z0/mxKV+l7ig94g4q2kewVdoU44IaP/fb2eHjORQsIiyqff7MH6T2PBmf1Tzui6jHHTGQOKoNxruNjJp32AzguwBc1p79Mj9iiO4dp57vXN1XTdlNRHO0jaj8Z/gnQUyUMZFaO87X7AyAeOwRlVGIIoNqTJIyHCIY2cADe08Btb5Gy+bptlEeKAEV47eDZOR0e9t63RmkYXgQAYdCbAGGrb7U7vmi6GIwWbLfIASvvDbHtGhfrU8azyGEO+IAk00cUW0up3FOFyprjYoviVGtog25BMhrSynsAyCU8TWgvaeiF4gAkER8oAxJlglDGJGFAsMSIUi2wlsAOASTBXoIszYUgmZslnk3M8sx1qHuDRlDg0G9IxBg9QfqCtsHLd2lLie0pWLVhUcmpOq9WKS/vPP+LOPmypKx97VjOQIUWhxuxNRoi72536w119FPYhw+sBezuieG8Ej7zpUxv3ClKGhYmAHgawRyb50QaTyUF9EnX+vzFiauQQCo0wBY1ho7t8LAaQVv+qJD0sg4hHMoB8ssS8hYfuKhXeSuEAMmwPsVkAjfRBqgJYB3AFiKWQLadCFQ6pEgVG8lSUBKT9iNw6iH3m094E6qdnAiYVm8RkTV9Tdc9bbq1utKGxcSZeR903aaPJ60je4d3XvEzBfVCB72Acb19X0vo0jKmKMFcLJ2Nn58afiDaogGrw4OaXuoxLVFK5aXUvTswxhmFVAAGorautsNPUp883x/fR6GptyINK81rp3nA+b94EmR/fqQAgBViBVAFQgVgBURWxjtI6gE8LegriSkDrIK2GueV0/Fu/uGpStdD3eM+U/hEnajZ2zHR0Ij/9eyTDyEZqDTGIye/u2scSHEHihEAcTVeYniVRwW9QPbytGb8th3WkLDRFSvs/v/qy9i82lqscwB2ysSIfvOk1e0Swha7g9kqT4Acg3wb/VRteM9oZfPW+jgFh0EAb7ICnCz5AQVWIqaCE5HOSHgX0JMw9A+kZQ3gqSE9EpmfXpxOX77z4xrWjeo1aV81oOy8DQAahda1nXLNbUPQBEu9n3NSqtD9XD2+wBV415v35vOo1jSGjklPav5KBR626ou2PjQYwTBMYWWGS5JvlJQjGYRbPkf44+IGHgUlHYVDVkLuOgelHBFkgUcgmKqEF5EuUn+1HIJVYJbguFVcUrP/ZlUfNfOYjN/PRAD1pwlKTPelRfWzpyrWruvlglXV2u2zDhi8OED11ufuqzlOeAPDZ7eb88PpQ7X2vaG+zuKklU/2OssA0wowIOdDyvFIO5eHHnDGKCQXIVx8W9KXVV7Q9CGhQd9cwD/ChG2bt5xxuNsfpPs0OR9zafN1gNjSPnnV1IWskWca/kFm/fBC8VyD0jMA/A/iNI+5OjfdeePSivw3f/LA8VGi4VxhIHlvf9cODFIV/R1R4C9JKGMKGCuao4J+i8CcQx4KOUJpmJeG2NoQRcg3SwWLIJ2sI3C7pfyr0v+i//JQnNgjo1Azg7Btm7k6HGxnbvj7R6BOwthmd23Dsu+qHStWiDDOqgfBp8BCWQnoA5D0k7g0ef/HOPf7t2bc2Hj03cj99w2AIzL0obklav2au+BGlVQ+oYTpI0UJS+bkTOj11Fs2yUXO+mieTW1lLWG+gFcFMFALLeZYQEJL+tSBuA3FJT1j/CwxteR/NAGpHknxg0azWKMGv4tgOThMf8slMz99Ap9xr5HNzMhGs4BMlIFYBehTA/RBu8UXd8q1Ztz9d++5lZZO6B03cbuty6H6HB4Qpc679LgvN78sZQKsNiVJSvcG5NW9bMWGXauvanhkB7h0ET2VUmNowfHKICGRcjKcGWNdBfQaEOZKuBn+vELSM4DIRDxjwZ+9x74TSqgeWXpyLQxrp7Q1CurUS8OcnFlFa+99xwb0rrYTaSZgjm/T4j2rfJsZQG9JoRtSMIun3vUH6OY3X0ieLLjjurmdGKoFzd2BQh/D6XxRadlx7rcWlNympZFmzi02h+jB9/zGrvj/n8dqvTzztmpdFLjoHwMksNE3Izj0IQxjPMISOHgGAI2wgc25kUZXpHhWepnAngq73Me9cO2Hio6OejjYGPmJkHODGmf9M8gskDrYsj6hT+/XSVIOmIEoaASJuNJxtbSwNFSogmGVZpoJWCPgTgXuMWBJo97dO2/GxzoOyidv18JBTplPP+vEuqa/+3KLCK5VWavCwp9J/W3VZ+5dRLkd48EDVauuWOdccQ4tOkrQ/hb0ETiFUElQiWILRaFGGJQ2755B3+IaqhD4A60ksBfCspL8Z8IfU7L7mpO+BITBzJgypoaPjOIx7xAWZe9GMuLBv06GOeIuk2QD3ABADiurBWDQCEYiYzJUBI2BoGBiDOmRypsRsLC5HQMoa1X7cctkEYPksXxJIK74K8PeifqaA/7nw2CX3D/IGtcMvz+r6F8j9CPIGQXCRIaTLo8jPeu6/T/4rysjg6iHA065tXU2ro2RCIY6LiVlzTG3nQzox6wd0LRSaABmyQyOrknrpbEUKrLRKdbkvxmsnJP29z1RK/cMEIoNZx+yuG/OYDZS+YxKEAMDc62c0x6XiAa7A3YI4AdIEgC4fwtYEYTLAqSCaFNREsyYotAqcCmAioIkESgIKJAsWDYwJyiRvbHAdDUNC6hqR+p/VEEE3+4TO2hFtNJhzBp+GXglLaLiiWvW//u4Jdzxbm40MAWjvjqc0awnj0sFKqx4KZKHZQrXvmz0L2j9amyWExsaTsbKe46GI64Y21LXn9HFjnJ97UYydn/abPiNoDAOH5140I955BuLe/qLrX5MynVRw1heaGGuypfEkxZgIhSI8JpKYFIgmApNoaGHQTgHYnuAESKYMk5gEYDLIyRCacg8TWZTTg0GQr53QrbrXGOc8vsFhgpDlJ30Hr7UQbiHxxezIOBjau4judt86p+uTiOKvyicZmZSNtq0I/p97Ljv5Rhy9MMIOyzV4pzYSWqPQ4yNdow2VqL3XIKXQAMI57bRr9kvNnQDySBD7ClxLpT+I19sV+SHcw0bFbJQO1iCmdhAmv9nWPfeiGTF2RjypuB0jU1RlmFhhZQoQpkbmdlHQrqTtTWifIO1JcicaJ7mItbbHjLIPjVC0lJeJNm5DMJqLiaTf/yz16Se/87q7/lRzoS3v6tqTDj+Fiw6oM4ouJhSWEnr3qsvafjFWtzu+Xd/BISNuh10TT7lqmitEbwH4UUbxAfWWDnMI1b4qEc5aveDkq8ZvAEMImRyCzU7H6igDAB7sfpAZFdy5Ac1DueHvOsdsQOVy2Z495KaW0gQ3NQlhdye/e3Dck+JuAnYDtCOBSQJaAU52Ec3qs/oFAWFUuHrk2is0cApLGMK5U247/qedHZ0CoSlndH+dLj4nmxcIgyS4mFLoB3QRUizo+X7bfQ2iFlffzSNeDX8/4pidwe574pld2zuH6az4XWm2s2j7S9qHxMtA2w/ZiRUCc/YQCnRxJF/9+uo9//Sp/P0GGQHHsvjj2u1DTsuqKwOGLzpH6osYi5eRwI/fcXiJleKEPgtNTMNkZ9xNKfYz06HIpFL7udiiXCmmxhJmLOhmVDSkFb9UsA/UTuNoPevak8X4aoRkAP5VNj+YUQkh6e8FdLOEb61Z0P7LzQ77cxaWJqbL945iHYLA18pwMMDd6FwLGQ3cQkhzrQCGaBQQGBepauXrq69o/9cxyMJHcdX3zIhLq0qHMbLXKPhUsidgWA7za0yFVaHPry9NDv2PPj29dyzn4Y3rRKza0Wm5YYwI5w7SMBxQWPl066st4ptEvQ7ifhZxYn24cqra6NUNwtwSQn4ky/1B8ccvPHbhzdPmdM1IgUUwNuU8PQfqHQaQjq4IJX29In5G8Sdi+JNX1GtRSJF4SXCKXBR5RqIMgYTJnGeUGlqM2l7UzhD3hrAXTftC3J1RIc58Wk372ADujKZpEAKjgg3MCBouWt1oEvj+X71mhyjmewx8P8ndcqOvAFwHoQKiT9B6gr2QloFYqqDnADxOZ8vM+HSohueKTVrVOOJUAjuQIXEboHNHT17V4DE6amGmE7Ux6XMWHl2aHJLp5rhfCHoZwZdCPEjE3iR2NMs5hQ2HiWARzVfxx4mtq9558bc+VUlDYaFZtLN8OgI1XBOEmNEVa1PMPYBE9YmZNBKWnRqcL1ptmsigUTGWS9oazjiqo4pjHQ9jhFSVhRN7Lj154fgMIDeCD99yxBwG+1pUtGm+ElQXI+Wzb5kTNoN6jEIOxQrrAD0D8nEE/RnA/TD+LqX78xB8foCP2NwEcwNytg/8dFZrYYJeKeCfJZ5A4QBXMIY0IAgj8h6SQqE5slCtXPzko3t9/4aFb7qMrriPNnhmQu4RlIlGh6+XRuBQNYzGHdcpZyPsfkRRpgPs5SFruofPBtioAZRVttULb/pkkDpIFnM1eSMtM+TY84FqvX5ejtW5fw9gtcAnCT0I4N5A3h8q6aOTW/2q4qEnraqdcrGlDKHxVM5GDcHcG45rKbn+g0m8PkjHG7m/RVYMaYBq4quGxNBFxjQJTxQLfV+48qp57+mvtM5k6NcYx+ZrdMfGcWMz47g8o5KFtHJdz+Vt7RilI3WjIeDDC488wwLOo0Nr8OOghxvMoq4FybH5rEETCGlYJ/I5AM9BeoDC9amLbqh5h3IZho6GI1M3nzxlx0A1g7n3zIibVzXtFiIcQeF0EEcBKIaQReZGx26RsRiv+/5dd85O7rv/yLOcVb20odPG/r68CIBAF7sQkvf0XNZ+yaBRtmMxgBo7ePYNM2eJ/J4r8KU+2Ux9QMPMfAqkI+s8P4C06pdJvIrENf2T+/6UH8C86RXJOMLE2bcctW/w/l/NeLo5Fnw6QIVLkItJn+gpF6ff/sE1c9/Ul+x4KP16D+F5yJYGz3iiU3X9b1Jb94Z1l717+Wh0sG0MIkxXrfodoDtIbP5Ztlk0zOa/EJSXfKqQVkJIqiGYs53McA6gXxTXNP3q7JtnXvzhG49419k3zNy9tmDlMkzazF3HgYnb5TKsLNgFr73tr4l8h4QvhjQsda4WvDLkOqQSjdMhhUJUORNJ7/WMSg6AHzQP6e+77wOAwKjZhaTvNsqfmS0+Rm3122gO0MnOMO+mme0krwbgagNJtw6fm5Vm5giLMho37feQ1xKQlyjGT+cftXj5UC+1hR4eQaitq83tOG3ZiabwSZJHS3VWIMQFs6Rf11x43KJ37j7nstJqm3CJRU3vVNKXDZveHOn2pj0tDRq65SLLcYErUU3O7rn61FV5hTHqM9pwEtORzekLgb+T8IRFHH7sydhj0sY3Zm5YPpWSfh+SvtRLgBVsJqivKMWFZ9846+SPLDx6T9QWX1vogefepbu92194zKKfCeGzEu5xRaOyxc1eZtrz7V2v2+6xBWf2u4mVD4Rq3wKQnnGTQxRnimLlrc9CGNwvv1kUVvZ+ykEtOjIqGOOSY1xyiAumkD4Jn3yh0IwP9Fx96iq0dbkNLf6YykAQmnvPjLi4pumquGhtSb+vH5c6xkWtF0YND5LjSSZrOL05wifeQ/yriB+T/qoLZt/xwBCoerM9Qe29PnzTUW8lw9fMuLdC8C52Lq2GB9icHHfBa+58lqAEcfIZ3ceRdiql1wBhb7pCBNrgEfdonJUwwskqoz//DB8wVyvAct2A7wHxBIAnBPwfhd/Hwd8+MDVkbKN+N7oIdbHoTbPOdMSFNDbnZ9yMddf15n12E10hE7vU0bj6uI0xQdJSLv1ysSEr2bQoBPvKhccv+tkWjqUEgHJ3W7xi6tI5NJxjwP6Z9lCP0tnrLnjtbQ+1tbVZd/cA8jnxzK7tXeArCB0OYiaA/STtTLKI2gFWQ8e/jISH1/86QN4D8s9BeFzEs4D+KuFBgr8B4od7Frxl9TACKUeMxub4xhgbP3bj4dO9uf8CeSo0NqaNBILwJ0L3QHwawERQ/wTwZSBaXWTwSdgoLDsCyiICtIgMXk8p4Lrgw5Xfet3t90KjMQ2blhPMu/PQyegtzCPwOYvY5FM9Y9TJ35y95Ja2LrjudoSBMS0D5M0+835eXLG2Z4dUhel0YTJDOpGwSSJb4dFKYpIYmghzCDBQprpKwqeCSwi/FrS/Cfg/83iooJYVz7zk9r4hJNGw4Zfji3xjrJ9J6MM3zXwlgStd7A7yadiwYlgQHRm8f4Tkv/dP7r/64oPvTebeMKOlyTW9NAAzAb2J4OEWseAThfzEZI7jvuQi0iIirYbHEPTZC45dcvWWKhnr3u+2Wfu5KrqiJntl2h/WCPqPSkv/ty8++N5elGGohZ7GgzTGuRDjvLEtMINgvKhT/kDPvnHW11yRn0grEm2jvy8QCaSLimv0ua+9edBxZ/jgTTMPjIBTAM6JSrarhMwjhLF7hNx7BBebS5PwOIEvxsmaq8494ffrt4AREACOXni0eyX85S7mqWk1BIJ/COJV1VC8+OLjb+wZ+ajWIbMBGune2lkKg85RqH/cwIFQwICYZBw6v61iALXd8NGbjjzGQ9eZY+tYcoH8rMWqAv8X4Hnzj1l0R/mWox1ee2voJEJ54dHRyrT68kB3kiPeCOLV5ljwXuPm8s3REFQJQRd5W/W5b89+cN14TtLe0DXv5ln/TuLzEGBGSqoohO80hUrHV46/t6fer1jTO2yJMLRxVnSzjWHcHuCTi4+YVKnwO+bs1BDGMElUGe8VFQxpv38wSO+/8LjbFwFAW1eba6SPP/jTQ3ay5uJZBsx1BdsjJEIIeXPiGAxBQnCOJsgr6FOts487v5OdYbM8QQ0Sv2nWex3xdRCTg+SdMxfS0E/ya/S4/BvHL35kY4s31gdeW+iNUd/b1AMMSowWzjwcAd9wsR02Jng4I4/kYlpIw28Bfal/cuUXFx98b29ZsEYqN+tLWH8iFd4L4mgX2cTghTDGsCAgmNEUtEoB3zLnzv3m7FtXb6oR1POAhbPe6ITv1lvmkPXLQ2FdEH9H4hYo3AHT49Uqnm3q0donsVt1Y/qIsd7DysNOjNHUtz2cnwwAPvHr11vhmQWzb+3fdgbQ8EA+cvOR7xB0GYlSCAMgzsYMwWIyePVKupbm/uuC197218ZRNDWLn3vDjJamuHRE8JhD8i0N+PxGw4IEmcvSSe/1H/NnLy5jE91l7fvOu/XII5DqIhfzoLrR54muuQz7CYl6RT1G8A8AHobHk8G0jLBl5rgq8klvUFPa5/sSTAQKFujEJAqWrE9ildauK62Lm+OS40QzTVIUdlTALgB3FbgHFA4iOY1ECMJjFG+oltJLvzuzpmIe//cbtwHUFD3lW46esFL+irjo3pJWfRhraVjboRlloRuMPPebxyz6Vfa0YejMu9/yL3P2jYftCMYfA/XuqOim+UQYCyspIbiI5oOeodcHLjh2yY832Dq+MVJs0czdUeUFFvFNg5pmawSXwKzMz0YSyKsiYLWC1tG4kkAPqPV553S/MojWGekFpBnEgRhAJHEKiRYBLZAmE2i1yBwt0zvm0r8KhOss4AvfOH7xI5sKi3Nz4uLZt816BRJ9BeQJ43q/HMC1iAypngNwvpqrF84//O419YxaYBlgLSyosPYYM74HwOvMcaJPNYiy3VCZGIKekvcfnX/cHddt4oNiWWWuWnjjPIJfAVEcqhsYBFblrWk0jvkJcyhbzyEHqoY6kyrnSO/DwyZ94ukV03/W3dYdsJUOj944NnDrkXsx1cVxyY5LKsETY6dHM7EFLaRKIX0bSr90wXF3PTOorGpwbef86vgJ1WjdW0n7tCu6A9L+MIYEUT4uRS7pS38bl8Lrz515x/JyeXyw8UDYm3WYhOss5q6NdPEGzBxqJGs2xlCOgF8M7XkQ4OOiubQSLu2f3Pf+iw++N9mcJHeTW79JqK0L7sKjF/2NTl9NK35ZFJuTxv5gCZhPFEhEID4IRhd+7JeH79NJBJTze8vda1mwc0+4Yf38Y+/4PsCz035/l4tJGNk4Y2CET3FJxQcYX1Xpd28CoMZhVOPxelXHpwUsHeOUGDbS32Q+6mC0/xpfV/tzTpvXFz/zaC6t+PUEuy4++N6kXIZtTrm5Wb3/3e0IEnjB0Utu9OJn02p41EU0aew3RMIUIICRK7i3p7G78qMLZx2HToQ690+oFhYg8IJjFt8UJ9aWJuHfIa2lIzZkeBLgIhqhd39k4RGvamARx3Z1ZIYYrVc/iXX4O1y1xFYeyxXs808/t9ON0OYTYJs7/CGrUwlNO+bYBbTwb8FrhYvJ8XiCGs2VJiFEBXdYEOaffcNr3tjZiTBosfLPKpdh55246IkLj11SBsKFJLghwyPALHPnqyWb88kfHzEJYzUCZXmIBLIQTgCwf8i6kLaZFCwDuQD50B8QvrRs5U7zu9u7/Za4A9tCd8hOdobW5au7AHw1ePXkCzIuIyBgaRKCRXypnPvvD98467Pzbpu1fW3Ray/t7EQo51UHGX81eHUEH5a5iBl3P8K7S4BFjBXw+t4W7J+hrButJIh8aMZHFh7xRTj7phl3Camw1UfnDIa6mRW1vKRQbf5ed3u3z1VRen4YQN7m3dn+YHXpDiu/Ic9PeK/Ho6IZAD++t4L5RDLHHV2ELyLRBfNum7V9Zx4S6kaQh4Rvzr519QXHLO5UwNwQ9FQUj2x4NRqahn0Z7J/GYtTMkc+oon+js8+Ycbu8BN12Oz+TnQafhstTc/957gk3rN+SSqgtNv+n5qq7D3qwut2xx1yqED7nq+GhqGBuvBAMCQavkPU38mQk+NpHb5i1d2dnQ3LYkCBK4PzjlvyvfOjwiZZFsRmGGwGFrNuH0EEZmTb6XQmZari/wnPM8X0KkE8VRir9tmLMN5CUx+WFUvjUt2ffugxbUgaHLT0AKl+QTnaGC4+7/UpEeFtaDZcCSGEI460Q8ompcjHnBIcffThPDpUng7XPzAeWcLtjj780EKf5NNznCiN4H6nWZ3HA3OtnNI+WB5SV1RbFdaUTjfwkjc3K0M5BUnEgwzK2dDCoJ3xBK4JCp5n7xLmbgfZtOwMYqGcpgRcctfj3rpR+GMAVccmZRbRRYvSongACfaIQleyVJnz57BuOOoQNqt7GZLQTnbpw9uIbAXzSJ/7JqGhu0OflGCqIveKmpl1HzAPypO9jtx/epBTvd0Vr9mkIQ5c5KhhpQPB6AsIfAK3YEqEhx0YYgvrMq7zdLUv+/Zuzb12trbD4W8cAGhakrQvu/CPu7FOETye9/ivyWubGaQT50DVL+kIw4wy4sGDejUe+p/xAWyGfHsKhu/eCYxbfBPCMpN8vcW6gOqBApYKE3QzhEGBggnlDPYK5189oTnujj5vjcWklqN7bJSjHAJQm4a9B+hWgxZIeBxCNb8z9KDvfaBKqCDj3qZW7fK+zM0uAtxYruPXTmQbLPfvmWTNAXRDF7ojaBLLxDHKQoKhg9GlYr6Cz5x+75NKG76GhKOVHF83a21f1w7joXpVUQsibMkUDg9f3omb/6fOPuHNl7fW1/51306zTCH3bnE30Oe9Q1y8aPLx+KOAekFMJTYf4MjocrLAZXl+Si8yCDz0B+upUxud1zr61H1tp529tDzAsLyiXYRccs/heT30irfrbaWAU1eafjV02nibBm+MEAJ/+yE2z2tq6DigAg8JBHaX8xpGLHzHwS2kaVruIVh8s4wgQhyT90cuGZv3lrgMKgN4UldxE7xVqrJ9zNBeT8PoDyNsg9EFokrA3oJdu6hJJmb4xLjpTUK8Cv7Y2X3xt5cXfNgaQG0FnB1QW7Fuvvf0Oi3maPDq8D39hVuFSmY5+LDJmFxLJRbYvjN/aadp2H27ranO58pqNKGW5DHt6xc4/QRo+E7yeyyaZSdmRyNjXqH+quY9aLtC7y5RpJA/M1E7Zu+YU9lJfURfIGyEcQOObQZ1szmbSceJ4e4PywWnBRaSISpqE24XwPuw+8esL8sXf2mIQYIRh0VvVCPKd+o0jFz8CoHPezYffIvEDgN4WF13kk7xNe2NSMII+VYgK3F6JPr3DtGWPkfjh0Gfc2QGA3VUIF827eeZeztm/hgCFoBAV3IS06l824KXKRGcnqhVMEjQBJJ2ZCxJ8qj9J6qbZb6lwCMBTXcF2kRdqJ9WOJ8mjQBeTZmRS8Y8G8b8LKFx+/nE3P9XojbbFsvw95gBnqJ7A+cfceSuD/lXS55KKv0tSJYrN6LKOi41xCGlVwZxt76hzP3zzzPfNvWdGPCgprCGImXRjQVoJf3SxWa10JLDHvJ+fWMyhpXxn+tWA/iwh9UGPQOG/GPAlSk9AOhLkyRZxF18NIaQaz+gcAQhRNseIIdWTWYms901z7tzzj7v5qRzo2upuf9smgWNMEOfdNmt7C3akvD8F5PEWsSUkEqiQpW0j36sERbHRp2EtFE6+4Njbf17raRyUFAKYd+vMNnp+RsQrotgsrfq7UEleN/+ku9fUKN/ywqOjFfBtBA5jCL9eumL6r3ZvWV1KXN+nGeGjNJsYkjDWxhjVDlU1g9ERIdXvEHSJkNy8bOXdf+5uz7AKbcNd//wxAAyfGXTOr16zQxLbKQA/7CLuYxGRJoJqu22EBy/Ix0Xn0n7/S1p0Sq1u5mCOHXMWHl1sCf4UQJ2FCdFulV6/uFQIJ31t1u1rG41x7j1vbHbP9UzdoWhLO2ffmp5946xXiLoyKrqXp7VqYizJnYEuyjq70iT0w+umJITO7xx/x2/qZWtmeFtgpNwL1AAaDaEjVwCVy2VbeexNL2WVR4HhRJCzzDBVAIJXQFaXDc0TsqmB0rmoJF+cf9LdawaVUDVi56ezWqOSznVFnqYEXX2T+84YTVRRvn5G8+oJTW8Q9QmL7NCNCGBrQ08FAs7RglcV0h8BLPLQTQhNS751/E0rapzG33Pht30SOBYuAQNQMjrxIIAH594z45LimuaTfNAcAsfGJTc5m5QeakcOhxoKYI4mr9NViG8B8ItyB9iJAY1+5hUWr/rQTUf8GBXsB+O9Fx98b9KAYAIA8pYvv6pY2FtEOS66A5OhO39AC5jdPkGLCLPMofnE/03C9+KocuV5R9/zxBCMIjxfnvvzxgCGQMkol2EPHtjGiw/uTgD85IMLD/9jHKLZacWfBPAgCdOdY5NFNEmQr/uzkpE71cmezoaMN4ePJ4bKrZWoqVBJkj8OzUUgsJvwcy+aEQfn/sWg/dNKCLm2X2jQ/FlNEewFn0ryYWWa4ikSdwXYT1hZeuN5xz5UqTWNdG6hUTf/kCFgg4lig2HMvX5Gc6kUTQ8W7QPqIIJHkHgJsgHVJQBPwOv8C45fsmATn4c+uPDoiebD283CZyyy/XyiUEviyPqovl4CjwP6s4DfWdCfGOHh4EtPtDq/onP2renfM7l74XqAUTxCLVm8mPf2Avhr/t8vPnXDjJbeuLA35Q5k0MuCGOj4wLCdPcJCj5Sy56j/RJqmS6wGD0QxLU1CP4SVJJ6U+BdS94C4l4geuGD2ratHTG45fhn6ix5gDB4hG/9WRic6B42Sm3fnoZOtr8m+OcKCjPf64E+P3qnQVD3Aw+0fpIKBT1H2GEr+mf7+pp6Lj7+xZ9A95X2BW6pn78VrHAYh/Z0MuVGX8AK9+I9mDEMz+i3haepXPjNpS43Lfz5c/w+QpcLw5B/j+gAAAABJRU5ErkJggg==';
 /* ---------- data ---------- */
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const PRICE_TYPES=['Day CSP','Monthly Average','M-1'];
 const MOUS=['MOU500011445','MOU500011502'];
 const ROLES={
-  customer:{label:'Customer',sub:'LQ Metals Pvt Ltd',initials:'LQ',email:'customer@lqmetals.com',home:'catalog'},
-  asm:{label:'ASM',sub:'Approver 1 · Area Sales Manager',initials:'AS',email:'asm@vedanta.com',home:'orders'},
-  rm:{label:'RM',sub:'Final approver · Regional Manager',initials:'RM',email:'rm@vedanta.com',home:'orders'}
+  customer:{label:'Customer',sub:'LQ Metals Pvt Ltd',initials:'LQ',email:'customer@lqmetals.com',desc:'Browse the catalog and plan orders',home:'catalog'},
+  asm:{label:'ASM',sub:'Approver 1 · Area Sales Manager',initials:'AS',email:'asm@vedanta.com',desc:'Edit, approve or reject planned orders',home:'po'},
+  rm:{label:'RM',sub:'Final approver · Regional Manager',initials:'RM',email:'rm@vedanta.com',desc:'Give final approval to planned orders',home:'po'}
 };
 const PASSWORD='demo123';
 const PRODUCTS=[
-  {id:'SHG',name:'SHG',type:'Zinc',img:'stack',pdpImg:'jumbo',code:'121104',variants:['JUMBO SHG (ZINC MIN. 99.995%)','SHG INGOT (ZINC MIN. 99.995%)'],
+  {id:'SHG',name:'SHG',full:'Special High Grade Zinc',type:'Zinc',img:'stack',pdpImg:'jumbo',code:'121104',variants:['JUMBO SHG (ZINC MIN. 99.995%)','SHG INGOT (ZINC MIN. 99.995%)'],
     spec:[['Length','1255 (+/- 10) mm'],['Height','300 (+/-10) mm'],['Width','510 (+/- 10) mm'],['Weight','Ingot Weight: 1000 kg each (+/- 50 kg)']]},
-  {id:'CGG',name:'CGG',type:'Zinc',img:'jumbo',variants:['CGG JUMBO (ZINC MIN. 99.5%)']},
-  {id:'EPG',name:'EPG',type:'Zinc',img:'stack',variants:['EPG (ZINC MIN. 99.95%)']},
-  {id:'HG',name:'HG',type:'Zinc',img:'stack',variants:['HG (ZINC MIN. 99.90%)']},
-  {id:'HZDA',name:'HZDA',type:'Zinc',img:'cross',variants:['HZDA (ZINC DIE-CASTING ALLOY)']},
-  {id:'LEAD',name:'Lead 99.99%',type:'Lead',img:'bundle',cartName:'Pure Lead',variants:['Pure Lead']},
-  {id:'PW',name:'PW',type:'Zinc',img:'stack',variants:['PW (PRIME WESTERN)']}
+  {id:'CGG',name:'CGG',full:'Continuous Galvanizing Grade',type:'Zinc',img:'jumbo',variants:['CGG JUMBO (ZINC MIN. 99.5%)']},
+  {id:'EPG',name:'EPG',full:'Electro Plating Grade',type:'Zinc',img:'stack',variants:['EPG (ZINC MIN. 99.95%)']},
+  {id:'HG',name:'HG',full:'High Grade Zinc',type:'Zinc',img:'stack',variants:['HG (ZINC MIN. 99.90%)']},
+  {id:'HZDA',name:'HZDA',full:'Hindustan Zinc Die-casting Alloy',type:'Zinc',img:'cross',variants:['HZDA (ZINC DIE-CASTING ALLOY)']},
+  {id:'LEAD',name:'Lead 99.99%',full:'Pure Lead',type:'Lead',img:'bundle',cartName:'Pure Lead',variants:['Pure Lead']},
+  {id:'PW',name:'PW',full:'Prime Western Zinc',type:'Zinc',img:'stack',variants:['PW (PRIME WESTERN)']}
 ];
 const P=id=>PRODUCTS.find(p=>p.id===id);
 const ST={
-  created:{label:'Created',hint:'Awaiting ASM approval',cls:'s-created'},
-  asm:{label:'ASM Approved',hint:'Awaiting RM approval',cls:'s-asm'},
-  approved:{label:'Approved',hint:'',cls:'s-ok'},
-  rejected:{label:'Rejected',hint:'',cls:'s-rej'}
+  created:{label:'Created',hint:'Awaiting ASM approval',cls:'p-created'},
+  asm:{label:'ASM Approved',hint:'Awaiting RM approval',cls:'p-asm'},
+  approved:{label:'Approved',hint:'Ready for delivery',cls:'p-ok'},
+  rejected:{label:'Rejected',hint:'',cls:'p-rej'}
 };
-
 function monthsAhead(){const d=new Date();const out=[];for(let i=0;i<4;i++){const x=new Date(d.getFullYear(),d.getMonth()+i,1);out.push(`${MN[x.getMonth()]} (${x.getFullYear()})`)}return out}
 const MONTHS=monthsAhead();
-const toBk=m=>m.replace(' (','-').replace(')','');           // "Oct (2026)" -> "Oct-2026"
+const toBk=m=>m.replace(' (','-').replace(')','');
 const bkKey=m=>{const [a,y]=m.split('-');return (+y)*12+MN.indexOf(a)};
+const mShort=m=>m.split(' (')[0];const mYear=m=>m.split('(')[1].replace(')','');
 
 function hist(status,created){
   const h=[{at:created,by:'Customer',action:'Created'}];
@@ -301,10 +437,9 @@ function hist(status,created){
   if(status==='approved')h.push({at:t(20),by:'RM',action:'Approved',remark:''});
   return h;
 }
-function seedPO(id,pid,variant,qty,month,rows,status,created){return {id,pid,variant,mou:MOUS[0],qty,month,rows,status,created,delivered:0,history:hist(status,created)}}
+function seedPO(id,pid,variant,qty,month,rows,status,created,delivered){return {id,pid,variant,mou:MOUS[0],qty,month,rows,status,created,delivered:delivered||0,history:hist(status,created)}}
 function seed(){
-  return {
-    user:null, cart:[], seq:18154, notes:[],
+  return {user:null,cart:[],seq:18154,notes:[],
     pos:[
       seedPO('MOG100018152','HG','HG (ZINC MIN. 99.90%)',250,'Oct (2026)',[{qty:250,type:'Monthly Average',month:'Oct (2026)'}],'created','2026-10-25T16:40:12'),
       seedPO('MOG100018148','CGG','CGG JUMBO (ZINC MIN. 99.5%)',300,'Nov (2026)',[{qty:200,type:'M-1',month:'Nov (2026)'},{qty:100,type:'Day CSP',month:'Nov (2026)'}],'asm','2026-10-20T11:05:44'),
@@ -316,487 +451,507 @@ function seed(){
       {dealId:'MOG100018141',ptype:'Lead',ticket:'1791443056845',apdt:'',type:'Day CSP',qty:1000,bal:961,month:'Oct-2026',created:'2026-10-08T12:34:00'},
       {dealId:'MOG100018139',ptype:'Zinc',ticket:'1791363342302',apdt:'1791363342392',type:'Day CSP',qty:100,bal:0,month:'Oct-2026',created:'2026-10-07T14:25:00'},
       {dealId:'MOG100018099',ptype:'Zinc',ticket:'1791183926829',apdt:'1791183926945',type:'Day CSP',qty:5000,bal:925,month:'Oct-2026',created:'2026-10-05T12:35:00'}
-    ]
-  };
+    ]};
 }
 
 /* ---------- state ---------- */
-const KEY='vedanta-export-order-proto-v1';
-let S;
-try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
+const KEY='vedanta-export-order-proto-v2';
+let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
 if(!S||!S.pos)S=seed();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
-
-const UI={route:S.user?ROLES[S.user].home:'login',loginErr:'',loginEmail:'',
-  pdp:null,otab:'po',pricing:'LME',search:'',product:'',queue:'mine',
+const UI={route:S.user?ROLES[S.user].home:'login',loading:false,loadingSolid:false,loginErr:'',loginEmail:'',
+  pdp:null,catFilter:'All',pricing:'LME',search:'',product:'',stat:'',
   bkMonth:toBk(MONTHS[0]),bkType:'',bkProduct:'',expanded:{},
-  menu:null,modal:null,toast:null,flash:{},cartErr:'',newBk:{}};
+  menu:null,side:false,modal:null,drawer:null,toast:null,flash:{},newBk:{},cartErr:''};
+if(S.user)UI.stat=defaultStat(S.user);
+function defaultStat(r){return r==='asm'?'created':r==='rm'?'asm':''}
 
 /* ---------- helpers ---------- */
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const p2=n=>String(n).padStart(2,'0');
-function fmt(iso){const d=new Date(iso);let h=d.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;return `${p2(d.getDate())}/${p2(d.getMonth()+1)}/${d.getFullYear()} ${h}:${p2(d.getMinutes())}:${p2(d.getSeconds())} ${ap}`}
-function fmtBk(iso){const d=new Date(iso);let h=d.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;return `${p2(d.getDate())}/${MN[d.getMonth()]}/${d.getFullYear()}<br>${h}:${p2(d.getMinutes())} ${ap}`}
+function fmtD(iso){const d=new Date(iso);return `${p2(d.getDate())} ${MN[d.getMonth()]} ${d.getFullYear()}`}
+function fmtT(iso){const d=new Date(iso);let h=d.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${p2(d.getMinutes())} ${ap}`}
+const fmt=iso=>`${fmtD(iso)}, ${fmtT(iso)}`;
 const n2=n=>Number(n||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const n0=n=>Number(n||0).toLocaleString('en-IN');
 const sum=rows=>rows.reduce((a,r)=>a+(+r.qty||0),0);
 const opt=(list,sel,ph)=>(ph?`<option value="">${esc(ph)}</option>`:'')+list.map(v=>`<option value="${esc(v)}"${v===sel?' selected':''}>${esc(v)}</option>`).join('');
-function toast(msg){UI.toast=msg;render();clearTimeout(toast.t);toast.t=setTimeout(()=>{UI.toast=null;render()},3200)}
-function notify(to,text){S.notes.unshift({to,text,at:new Date().toISOString(),read:false})}
-const roleOf=()=>S.user;
+function toast(msg,tone){UI.toast={msg,tone:tone||'ok'};render();clearTimeout(toast.t);toast.t=setTimeout(()=>{UI.toast=null;render()},3600)}
+function notify(to,text,po){S.notes.unshift({to,text,po,at:new Date().toISOString(),read:false})}
 const pending=()=>S.user==='asm'?S.pos.filter(p=>p.status==='created'):S.user==='rm'?S.pos.filter(p=>p.status==='asm'):[];
-function priceTypeText(rows){return rows.length===1?rows[0].type:rows.map(r=>`${r.type} (${r.qty})`).join(', ')}
-function priceInText(rows){return [...new Set(rows.map(r=>r.month))].join(', ')}
 
-/* ---------- icons ---------- */
+/* ---------- icons (stroke) ---------- */
+const sv=(d,w)=>`<svg width="${w||18}" height="${w||18}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I={
-  menu:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
-  search:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>',
-  cart:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 4h2l2.4 11h11l2-8H6.2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>',
-  bell:'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
-  wallet:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M16 12h5v4h-5z"/></svg>',
-  truck:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 6h12v9H2zM14 9h4l3 3v3h-7z"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>',
-  catalog:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="1"/><path d="M7 9h4v4H7zM14 10h4M14 14h4"/></svg>',
-  orders:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="1"/><path d="M9 3h6v3H9zM8 11h8M8 15h6"/></svg>',
-  shield:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/></svg>',
-  doc:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></svg>',
-  grid:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h7v9H4zM13 4h7v5h-7zM13 11h7v9h-7zM4 15h7v5H4z"/></svg>',
-  bank:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9 12 4l9 5M5 10v8M10 10v8M14 10v8M19 10v8M3 20h18"/></svg>',
-  cal:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
-  head:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1"/><rect x="17" y="14" width="4" height="6" rx="1"/></svg>',
-  trash:'<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4zM6 8h12l-1 13H7z"/></svg>',
-  x:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>',
-  plus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><path d="M12 8v8M8 12h8"/></svg>',
-  minus:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18"/><path d="M8 12h8"/></svg>',
-  back:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m15 5-7 7 7 7"/></svg>',
-  edit:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg>',
-  check:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>',
-  ban:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/></svg>',
-  del:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h12v16H4zM8 9h5M8 13h5M18 10l3 3-3 3"/></svg>',
-  inv:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/></svg>',
-  swap:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8h16l-3-3M20 16H4l3 3"/></svg>',
-  roll:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 8v12h12M8 4h12v12M14 4l6 6"/></svg>',
-  book:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="1"/><path d="M3 10h18M8 3v4M16 3v4M8 15h3"/></svg>',
-  eye:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>'
+  menu:sv('<path d="M4 6h16M4 12h16M4 18h16"/>',20),
+  search:sv('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',16),
+  bell:sv('<path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',20),
+  cart:sv('<path d="M3 4h2l2.4 11h11l2-8H6.2"/><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/>'),
+  grid:sv('<rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/>'),
+  clip:sv('<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 3h6v3H9zM9 11h6M9 15h4"/>'),
+  tag:sv('<path d="M3 12V4h8l10 10-8 8z"/><circle cx="7.5" cy="8.5" r="1.3"/>'),
+  truck:sv('<path d="M2 6h12v9H2zM14 9h4l3 3v3h-7z"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>'),
+  bolt:sv('<path d="M13 3 5 14h6l-1 7 8-11h-6z"/>'),
+  list:sv('<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>'),
+  x:sv('<path d="M6 6l12 12M18 6 6 18"/>'),
+  plus:sv('<path d="M12 5v14M5 12h14"/>',16),
+  trash:sv('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>'),
+  check:sv('<path d="m5 12 5 5 9-10"/>',16),
+  ban:sv('<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',16),
+  edit:sv('<path d="M4 20h4L19 9l-4-4L4 16z"/>',16),
+  eye:sv('<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',16),
+  inv:sv('<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/>',16),
+  swap:sv('<path d="M4 8h16l-3-3M20 16H4l3 3"/>',16),
+  roll:sv('<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>',16),
+  cal:sv('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',16),
+  arrow:sv('<path d="M5 12h14M13 6l6 6-6 6"/>',16),
+  back:sv('<path d="M19 12H5M11 18l-6-6 6-6"/>',16),
+  chev:sv('<path d="m9 6 6 6-6 6"/>',14),
+  down:sv('<path d="m6 9 6 6 6-6"/>',14),
+  info:sv('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',16),
+  user:sv('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',14),
+  shield:sv('<path d="M12 3 5 6v6c0 4 3 7 7 9 4-2 7-5 7-9V6z"/>',14),
+  crown:sv('<path d="m3 8 4 4 5-7 5 7 4-4-2 11H5z"/>',14),
+  globe:sv('<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',16),
+  box:sv('<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/>',22),
+  logout:sv('<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10"/>',14),
+  reset:sv('<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>',14)
 };
-function logo(){return `<div style="display:flex;align-items:center;gap:6px" aria-label="vedanta">
-  <svg width="34" height="34" viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke-width="3.2" stroke-linecap="round">
-  <path d="M6 12c6-4 12-4 18 0s10 4 12 2" stroke="#0A5DA8"/><path d="M4 19c7-4 13-4 20 0s10 4 13 2" stroke="#2C7FC3"/>
-  <path d="M5 26c6-4 12-4 19 0s9 4 11 2" stroke="#6CB33F"/><path d="M9 33c5-3 10-3 15 0s7 3 9 1" stroke="#8CC63F"/></g></svg>
-  <div style="line-height:1"><div style="font-size:26px;font-weight:700;color:var(--blue);letter-spacing:-.02em">vedanta</div>
-  <div style="font-size:10px;color:var(--green);font-weight:700;text-align:right">transforming for good</div></div></div>`}
 
-/* product illustrations (generic ingots) */
+/* generic ingot illustrations */
 function ingot(kind){
   const st='stroke="#5E666E" stroke-width="1"';
   if(kind==='jumbo')return `<svg viewBox="0 0 220 170" aria-hidden="true">
     <polygon points="40,95 140,70 190,92 90,118" fill="#C9CFD5" ${st}/><polygon points="40,95 90,118 90,155 40,132" fill="#8F979F" ${st}/><polygon points="90,118 190,92 190,128 90,155" fill="#A9B0B7" ${st}/>
     <polygon points="55,55 140,35 180,52 95,73" fill="#D3D8DD" ${st}/><polygon points="55,55 95,73 95,100 55,82" fill="#959DA5" ${st}/><polygon points="95,73 180,52 180,78 95,100" fill="#B1B7BE" ${st}/>
     <ellipse cx="118" cy="52" rx="7" ry="3" fill="#8F979F"/><ellipse cx="150" cy="47" rx="7" ry="3" fill="#8F979F"/></svg>`;
-  if(kind==='cross'){let g='';const pos=[[60,60,-30],[100,40,-30],[140,62,-30],[80,95,60],[120,80,60],[100,118,-30],[140,100,60],[60,100,60]];
-    pos.forEach(([x,y,r])=>{g+=`<g transform="translate(${x} ${y}) rotate(${r})"><rect x="-28" y="-10" width="56" height="20" rx="4" fill="#A3ABB3" ${st}/><rect x="-24" y="-7" width="48" height="8" rx="3" fill="#C8CED4"/></g>`});
-    return `<svg viewBox="0 0 220 170" aria-hidden="true">${g}</svg>`}
+  if(kind==='cross'){let g='';[[60,60,-30],[100,40,-30],[140,62,-30],[80,95,60],[120,80,60],[100,118,-30],[140,100,60],[60,100,60]].forEach(([x,y,r])=>{g+=`<g transform="translate(${x} ${y}) rotate(${r})"><rect x="-28" y="-10" width="56" height="20" rx="4" fill="#A3ABB3" ${st}/><rect x="-24" y="-7" width="48" height="8" rx="3" fill="#C8CED4"/></g>`});return `<svg viewBox="0 0 220 170" aria-hidden="true">${g}</svg>`}
   let bars='';for(let i=0;i<6;i++){const y=60+i*15;bars+=`<path d="M30 ${y} L100 ${y+20} L195 ${y-8}" fill="none" stroke="#6B737B" stroke-width="1.2"/>`}
-  const straps=kind==='bundle'
-    ? '<path d="M45 50 L170 140 M80 40 L190 120" stroke="#2BA38A" stroke-width="4"/><path d="M30 92 L100 112 L195 84" stroke="#2BA38A" stroke-width="4" fill="none"/>'
-    : '<path d="M55 42 V140 M75 48 V146 M125 50 V146 M160 40 V136" stroke="#2BA38A" stroke-width="4"/>';
-  return `<svg viewBox="0 0 220 170" aria-hidden="true">
-    <polygon points="30,45 125,25 195,40 100,65" fill="#C3C9CF" ${st}/><polygon points="30,45 100,65 100,155 30,135" fill="#868E96" ${st}/><polygon points="100,65 195,40 195,130 100,155" fill="#A2A9B0" ${st}/>
-    ${bars}${straps}</svg>`;
+  const straps=kind==='bundle'?'<path d="M45 50 L170 140 M80 40 L190 120" stroke="#2BA38A" stroke-width="4"/><path d="M30 92 L100 112 L195 84" stroke="#2BA38A" stroke-width="4" fill="none"/>':'<path d="M55 42 V140 M75 48 V146 M125 50 V146 M160 40 V136" stroke="#2BA38A" stroke-width="4"/>';
+  return `<svg viewBox="0 0 220 170" aria-hidden="true"><polygon points="30,45 125,25 195,40 100,65" fill="#C3C9CF" ${st}/><polygon points="30,45 100,65 100,155 30,135" fill="#868E96" ${st}/><polygon points="100,65 195,40 195,130 100,155" fill="#A2A9B0" ${st}/>${bars}${straps}</svg>`;
 }
+function brand(){return `<div class="brand-row"><span class="mark"><img src="${LOGO}" alt=""></span><div><b>vedanta</b><span>Metalbazaar</span></div></div>`}
+function loaderHTML(){return `<div class="page-loader${UI.loadingSolid?' solid':''}" role="status" aria-live="polite"><div class="loader-mark"><img src="${LOGO}" alt=""></div><span class="loader-label">${esc(UI.loadingLabel||'Loading…')}</span></div>`}
 
-/* ---------- views ---------- */
+/* ---------- login ---------- */
 function viewLogin(){
-  const r=Object.entries(ROLES).map(([k,v])=>`<button type="button" data-a="fill" data-role="${k}">${v.label}<small>${esc(v.email)}</small></button>`).join('');
-  return `<div class="login">
-  <div class="login-top">${logo()}<nav><span>Price Circular ▾</span><span>helpdesk.vedanta@moglix.com</span><span style="color:#0A5DA8">How to Register</span><span class="cb">Community Bazaar</span></nav></div>
-  <section class="hero"><div class="hero-in">
-    <form class="login-card" data-form="login" novalidate>
-      <h2>Sign in to Vedanta <b>Metalbazaar</b></h2>
-      <select class="in" style="max-width:240px;color:#0A5DA8;font-weight:500" id="company" aria-label="Company"><option>Vedanta Hindustan Zinc Ltd</option><option>Vedanta Aluminium</option></select>
-      <div class="field"><label for="email">Email address</label><input class="in${UI.loginErr?' err':''}" id="email" type="email" autocomplete="off" value="${esc(UI.loginEmail)}"></div>
-      <div class="field"><label for="pwd">Enter Password</label><input class="in${UI.loginErr?' err':''}" id="pwd" type="password" autocomplete="off"></div>
-      ${UI.loginErr?`<div class="err-text" role="alert">${esc(UI.loginErr)}</div>`:''}
-      <div style="display:flex;justify-content:space-between;font-size:13px"><button type="button" class="link" data-a="toast" data-msg="Password reset is outside this prototype">Forgot Password</button><button type="button" class="link" data-a="toast" data-msg="Terms of Use open in the live site">Terms of Use</button></div>
-      <button class="btn btn-blue btn-block" type="submit">Sign In</button>
-      <div class="demo"><span class="demo-t">Prototype logins · password ${PASSWORD}</span><div class="demo-row">${r}</div></div>
-      <div class="or">OR</div>
-      <div style="font-size:14px">Do not have an account?</div>
-      <button type="button" class="btn btn-line btn-block" data-a="toast" data-msg="Buyer sign-up is outside this prototype">Sign Up as Buyer</button>
-      <button type="button" class="btn btn-green btn-block" data-a="toast" data-msg="Seller login is outside this prototype">Login as Seller</button>
+  return `<div class="auth">
+  <section class="auth-brand">
+    ${brand()}
+    <div class="auth-pitch"><h1>Plan metal orders with <em>two-step approval</em> built in.</h1>
+      <p>Customers plan orders against their MoU, the ASM reviews them, and the RM gives final approval. Price bookings are created the moment an order is approved.</p></div>
+    <div class="flowline"><div><b>Step 1</b>Customer plans order</div><div><b>Step 2</b>ASM reviews</div><div><b>Step 3</b>RM approves</div><div><b>Result</b>Price booking created</div></div>
+  </section>
+  <section class="auth-form">
+    <form data-form="login" novalidate>
+      <div><h2>Sign in</h2><div class="sub">Vedanta Metalbazaar · prototype with demo data</div></div>
+      <div class="field"><label for="company">Company</label><select class="input" id="company"><option>Vedanta Hindustan Zinc Ltd</option><option>Vedanta Aluminium</option></select></div>
+      <div class="field"><label for="email">Email address</label><input class="input${UI.loginErr?' err':''}" id="email" type="email" autocomplete="off" placeholder="name@company.com" value="${esc(UI.loginEmail)}"></div>
+      <div class="field"><label for="pwd">Password</label><input class="input${UI.loginErr?' err':''}" id="pwd" type="password" autocomplete="off" placeholder="Enter password">
+        <div style="display:flex;justify-content:space-between"><button type="button" class="linkbtn" style="font-size:13px" data-a="toast" data-msg="Password reset is outside this prototype" data-tone="info">Forgot password</button><button type="button" class="linkbtn" style="font-size:13px" data-a="toast" data-msg="Terms of Use open on the live site" data-tone="info">Terms of Use</button></div></div>
+      ${UI.loginErr?`<div class="notice bad" role="alert">${esc(UI.loginErr)}</div>`:''}
+      <button class="btn btn-primary btn-lg btn-block" type="submit">Sign in</button>
+      <div class="divider">Prototype logins · password ${PASSWORD}</div>
+      <div class="roles">${Object.entries(ROLES).map(([k,v])=>`<button type="button" class="role-card" data-a="quick" data-role="${k}"><span class="av av-${k}">${v.initials}</span><span><b>${v.label}</b><small>${esc(v.desc)}</small></span><span class="go">${I.arrow}</span></button>`).join('')}</div>
+      <div class="alt-links"><button type="button" class="btn btn-outline" data-a="toast" data-msg="Buyer sign-up is outside this prototype" data-tone="info">Sign up as buyer</button><button type="button" class="btn btn-outline" data-a="toast" data-msg="Seller login is outside this prototype" data-tone="info">Login as seller</button></div>
     </form>
-    <div class="welcome"><div class="w1">Welcome to the</div><div class="w2">World's Largest <b>Metalbazaar</b></div>
-      <p>Experience Next Generation Metal Buying and Grow Your Business with</p>
-      <div class="feat"><div><i></i>Digital Catalog</div><div><i></i>Digital Order Management</div><div><i></i>Multiple Pricing Methods</div><div><i></i>Value Added Services like Financing &amp; More!</div></div>
-    </div>
-  </div></section></div>`;
+  </section></div>`;
 }
 
+/* ---------- shell ---------- */
 function shell(content){
-  const role=ROLES[S.user];const cust=S.user==='customer';
-  const myNotes=S.notes.filter(n=>n.to===S.user);const unread=myNotes.filter(n=>!n.read).length;
-  const cartN=S.cart.length;
-  const railBtn=(icon,label,to,on,dis)=>`<button type="button" aria-label="${label}" title="${label}" ${dis?'disabled':`data-a="nav" data-to="${to}"`} class="${on?'on':''}">${I[icon]}</button>`;
-  const r=UI.route;
-  const bell=UI.menu==='bell'?`<div class="drop" role="menu"><div class="h">Notifications</div>${myNotes.length?myNotes.slice(0,8).map(n=>`<div class="note${n.read?'':' unread'}">${esc(n.text)}<small>${fmt(n.at)}</small></div>`).join(''):'<div class="note">No notifications yet.</div>'}</div>`:'';
-  const av=UI.menu==='avatar'?`<div class="drop" role="menu"><div class="h">Signed in as ${esc(role.label)}</div><div class="note">${esc(role.email)}<small>${esc(role.sub)}</small></div>
-    <div class="h">Switch role (prototype)</div>${Object.entries(ROLES).filter(([k])=>k!==S.user).map(([k,v])=>`<button class="item" data-a="switch" data-role="${k}">Log in as ${v.label}</button>`).join('')}
-    <button class="item" data-a="reset">Reset demo data</button><button class="item" data-a="logout" style="color:var(--bad)">Log out</button></div>`:'';
-  return `<header class="top">
-    <button class="iconbtn" aria-label="Menu" data-a="toast" data-msg="Menu is static in this prototype">${I.menu}</button>
-    ${logo()}
-    <form class="search" data-form="search" role="search"><input id="gsearch" placeholder="Search for DO, PO, Dispatch Details, etc" aria-label="Search orders"><button type="submit" aria-label="Search">${I.search}</button></form>
-    <div class="top-right">
-      <span class="proto">Prototype</span>
-      ${cust?`<button class="btn btn-blue" data-a="toast" data-msg="Zinc Freight Bazaar is outside this prototype">${I.truck}Zinc Freight Bazaar</button>
-      <div class="plant"><label for="plant">Market and Plant</label><select id="plant"><option>Domestic - MAHAVIR</option><option>Export</option></select></div>
-      <button class="iconbtn" aria-label="Wallet" data-a="toast" data-msg="Wallet is outside this prototype">${I.wallet}</button>
-      <button class="iconbtn" aria-label="Cart, ${cartN} items" data-a="nav" data-to="cart">${I.cart}<span class="badge">${cartN}</span></button>`
-      :`<div class="role-chip"><b>${esc(role.label)}</b>${esc(role.sub)}</div>`}
-      <div style="position:relative"><button class="iconbtn" aria-label="Notifications" data-a="menu" data-m="bell">${I.bell}${unread?`<span class="badge red">${unread}</span>`:''}</button>${bell}</div>
-      <div style="position:relative"><button class="avatar" aria-label="Account menu" data-a="menu" data-m="avatar">${role.initials}</button>${av}</div>
-    </div>
-  </header>
-  <div class="shell">
-    <nav class="rail" aria-label="Sections">
-      ${railBtn('catalog','Catalog','catalog',r==='catalog'||r==='pdp',!cust)}
-      ${railBtn('cart','Cart','cart',r==='cart',!cust)}
-      ${railBtn('orders','Orders','orders',r==='orders',false)}
-      ${railBtn('shield','Compliance','',false,true)}${railBtn('doc','Documents','',false,true)}${railBtn('grid','Dashboard','',false,true)}
-      ${railBtn('bank','Finance','',false,true)}${railBtn('cal','Schedule','',false,true)}${railBtn('head','Support','',false,true)}
-    </nav>
-    <main class="main"><div class="wrap">${content}</div></main>
-  </div>`;
+  const u=S.user,role=ROLES[u],cust=u==='customer',r=UI.route;
+  const myNotes=S.notes.filter(n=>n.to===u),unread=myNotes.filter(n=>!n.read).length,pend=pending().length;
+  const nav=(icon,label,to,extra,dis)=>`<button class="nav-i" ${dis?'disabled':`data-a="nav" data-to="${to}"`} ${r===to||(to==='catalog'&&r==='pdp')?'aria-current="page"':''}>${I[icon]}<span>${label}</span>${extra||''}</button>`;
+  const side=`<aside class="side${UI.side?' open':''}" aria-label="Main navigation">
+    ${brand()}
+    ${cust?`<div class="nav-g">Buy</div>${nav('grid','Catalog','catalog')}${nav('cart','Cart','cart',S.cart.length?`<span class="cnt g">${S.cart.length}</span>`:'')}`:''}
+    <div class="nav-g">${cust?'My orders':'Approvals'}</div>
+    ${nav('clip','Planned Orders','po',!cust&&pend?`<span class="cnt">${pend}</span>`:'')}
+    ${nav('tag','Price Bookings','pb')}
+    ${nav('truck','Delivery Orders','do','<span class="soon">Next</span>')}
+    ${nav('bolt','Spot Orders','spot','<span class="soon">Later</span>')}
+    ${nav('list','LP Sales Orders','lp','<span class="soon">Later</span>')}
+    <div class="me"><div class="me-row"><span class="av av-${u}">${role.initials}</span><div style="min-width:0"><b>${esc(role.label)}</b><small>${esc(role.sub)}</small></div></div>
+      <div class="eyebrow" style="font-size:10.5px">Switch role</div>
+      <div class="switch">${Object.entries(ROLES).filter(([k])=>k!==u).map(([k,v])=>`<button data-a="switch" data-role="${k}">${v.label}</button>`).join('')}</div>
+      <div class="links"><button class="linkbtn" data-a="reset">Reset demo</button><button class="linkbtn red" data-a="logout">Log out</button></div></div>
+  </aside>`;
+  const pop=UI.menu==='bell'?`<div class="pop" role="dialog" aria-label="Notifications"><div class="pop-h">Notifications<span class="muted" style="font-weight:400;font-size:12.5px">${myNotes.length} total</span></div><div class="pop-list">
+    ${myNotes.length?myNotes.slice(0,10).map(n=>`<div class="ntf${n.read?'':' unread'}"><i></i><div>${esc(n.text)}<small>${fmt(n.at)}</small></div></div>`).join(''):'<div class="empty" style="padding:28px">No notifications yet</div>'}</div></div>`:'';
+  const top=`<header class="topbar">
+    <button class="icon-btn menu-btn" aria-label="Open navigation" data-a="side">${I.menu}</button>
+    <form class="gsearch" data-form="search" role="search">${I.search}<input id="gsearch" placeholder="Search by PO number" aria-label="Search by PO number"></form>
+    <div class="top-r">
+      <span class="proto-tag">Prototype</span>
+      ${cust?`<label class="market">${I.globe}<span class="muted">Market</span><select id="plant" aria-label="Market and plant"><option>Domestic - MAHAVIR</option><option>Export</option></select></label>
+      <button class="icon-btn" aria-label="Cart, ${S.cart.length} items" data-a="nav" data-to="cart">${I.cart}${S.cart.length?`<span class="dot-badge g">${S.cart.length}</span>`:''}</button>`:''}
+      <div style="position:relative"><button class="icon-btn" aria-label="Notifications${unread?`, ${unread} unread`:''}" aria-expanded="${UI.menu==='bell'}" data-a="bell">${I.bell}${unread?`<span class="dot-badge">${unread}</span>`:''}</button>${pop}</div>
+    </div></header>`;
+  return `<div class="app">${side}${UI.side?'<div class="scrim" data-a="side" style="z-index:25"></div>':''}<div style="min-width:0">${top}<main class="content"${UI.loading?' inert aria-busy="true"':''}><div class="page">${content}</div></main></div></div>`;
 }
 
+/* ---------- catalog ---------- */
 function viewCatalog(){
-  return `<h1 class="page-h">All Products</h1><div class="card"><div class="grid">
-  ${PRODUCTS.map(p=>`<div class="prod"><div class="pimg">${ingot(p.img)}</div><h3>${esc(p.name)}</h3><button class="btn btn-line" data-a="buy" data-id="${p.id}">Buy Now</button></div>`).join('')}
-  </div></div>`;
+  const f=UI.catFilter;const list=PRODUCTS.filter(p=>f==='All'||p.type===f);
+  return `<div class="page-head"><div><h1>Catalog</h1><p>Pick a product to plan an order against your MoU.</p></div>
+    <div class="seg" role="group" aria-label="Filter by metal">${['All','Zinc','Lead'].map(x=>`<button aria-pressed="${f===x}" data-a="catf" data-k="${x}">${x}</button>`).join('')}</div></div>
+  <div class="cat-grid">${list.map(p=>`<article class="card pcard"><div class="art">${ingot(p.img)}</div><div class="body">
+    <div class="meta"><span class="tag ${p.type.toLowerCase()}">${p.type}</span>${p.variants.length>1?`<span class="tag">${p.variants.length} variants</span>`:''}</div>
+    <h3>${esc(p.name)}</h3><div class="desc">${esc(p.full)}</div>
+    <button class="btn btn-primary btn-block" data-a="buy" data-id="${p.id}">Buy now</button></div></article>`).join('')}</div>`;
 }
 
+/* ---------- PDP ---------- */
 function viewPDP(){
-  const d=UI.pdp,p=P(d.pid);const mou=d.tab==='mou';
+  const d=UI.pdp,p=P(d.pid),mou=d.tab==='mou';
   const specRows=[['Product description',d.variant],['Code',p.code||'—'],...(p.spec||[['Dimensions & weight','[Add from product spec sheet]']])];
-  const acc=(k,t,body)=>`<div class="acc"><button class="acc-h" data-a="acc" data-k="${k}" aria-expanded="${!!d.open[k]}">${t}<span aria-hidden="true">${d.open[k]?'−':'+'}</span></button>${d.open[k]?body:''}</div>`;
-  return `<nav class="crumb" aria-label="Breadcrumb"><button data-a="nav" data-to="catalog">Catalog</button><span class="sep">›</span><button data-a="nav" data-to="catalog">All Products</button><span class="sep">›</span><span>${esc(p.name)}</span></nav>
+  const tabBody=d.spec==='spec'?`<table class="spec">${specRows.map(([a,b])=>`<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table>`
+    :`<div class="empty" style="padding:28px"><span>${d.spec==='chem'?'[Chemical composition from the product spec sheet]':'[Bundle specification from the product spec sheet]'}</span></div>`;
+  return `<div class="page-head"><div><div class="crumbs"><button data-a="nav" data-to="catalog">Catalog</button>${I.chev}<span>${esc(p.name)}</span></div><h1>${esc(p.name)}</h1><p>${esc(p.full)}</p></div></div>
   <div class="pdp">
-    <div class="card pad"><div class="pimg" style="aspect-ratio:1/1">${ingot(p.pdpImg||p.img)}</div></div>
-    <div class="card pad" style="display:flex;flex-direction:column;gap:18px">
-      <h2 style="font-size:20px;font-weight:500">${esc(p.name)}</h2>
-      <div><div class="tabs" role="tablist">
-        ${[['mou','Buy Under MOU'],['spot','Buy Under Spot Price'],['lp','LP Sale (List price)']].map(([k,t])=>`<button role="tab" aria-selected="${d.tab===k}" class="${d.tab===k?'on':''}" data-a="pdptab" data-k="${k}">${t}</button>`).join('')}
-      </div>
-      <div class="tab-body">
-        ${mou?`<div class="field" style="max-width:420px"><label for="pdp-mou">MoU number</label><select class="in" id="pdp-mou" data-pdp="mou">${opt(MOUS,d.mou)}</select></div>`
-             :`<div class="notice">Spot price and list price buying are outside this prototype. Use <b>Buy Under MOU</b> to continue the export order flow.</div>`}
-        <div class="field" style="max-width:320px"><label for="pdp-var" style="font-size:17px;font-weight:500">Variant</label><select class="in" id="pdp-var" data-pdp="variant">${opt(p.variants,d.variant)}</select></div>
-        ${acc('spec','Product Specification',`<table class="spec">${specRows.map(([a,b])=>`<tr><td>${esc(a)}</td><td>${esc(b)}</td></tr>`).join('')}</table>`)}
-        ${acc('chem','Chemical Composition','<p style="color:var(--muted)">[Chemical composition from the product spec sheet]</p>')}
-        ${acc('bundle','Bundle Specification','<p style="color:var(--muted)">[Bundle specification from the product spec sheet]</p>')}
-      </div></div>
+    <div style="display:flex;flex-direction:column;gap:20px;min-width:0">
+      <div class="card gallery"><div class="art">${ingot(p.pdpImg||p.img)}</div>
+        <div class="info"><div class="meta" style="display:flex;gap:6px"><span class="tag ${p.type.toLowerCase()}">${p.type}</span>${p.code?`<span class="tag">Code ${p.code}</span>`:''}</div>
+          <h2>${esc(p.name)}</h2>
+          <div class="kv"><div><span>Selected variant</span><b>${esc(d.variant)}</b></div><div><span>Unit</span><b>Metric tonne (MT)</b></div><div><span>Delivery window</span><b>${mShort(MONTHS[0])} – ${mShort(MONTHS[3])} ${mYear(MONTHS[3])}</b></div></div></div></div>
+      <div class="card"><div class="tabs" role="tablist">${[['spec','Product specification'],['chem','Chemical composition'],['bundle','Bundle specification']].map(([k,t])=>`<button role="tab" aria-selected="${d.spec===k}" data-a="spect" data-k="${k}">${t}</button>`).join('')}</div>
+        <div class="card-b" style="padding-top:8px">${tabBody}</div></div>
     </div>
-    <div class="buy">
-      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><label for="pdp-qty" style="font-size:15px">Quantity (MT)</label>
-        <div class="stepper"><button aria-label="Decrease quantity" data-a="pqty" data-d="-1">−</button><input id="pdp-qty" class="num" type="number" min="1" value="${d.qty}" data-pdp="qty"><button aria-label="Increase quantity" data-a="pqty" data-d="1">+</button></div></div>
-      <div class="field"><label for="pdp-month" style="font-size:15px">Delivery in</label><select class="in" id="pdp-month" data-pdp="month">${opt(MONTHS,d.month)}</select>
-        <span style="font-size:12px;color:var(--muted)">Current month plus the next 3 months</span></div>
-      <button class="btn btn-green btn-block upper" ${mou?'':'disabled'} data-a="addcart">Add to cart</button>
-      <button class="btn btn-blue btn-block upper" ${mou?'':'disabled'} data-a="planpdp">Plan order</button>
-    </div>
+    <aside class="card order-panel"><div class="card-h"><h3>Plan your order</h3></div><div class="card-b">
+      <div class="field"><span class="lbl">Buying method</span><div class="seg" role="group" aria-label="Buying method">${[['mou','Buy under MoU'],['spot','Spot price'],['lp','List price']].map(([k,t])=>`<button aria-pressed="${d.tab===k}" data-a="pdptab" data-k="${k}">${t}</button>`).join('')}</div></div>
+      ${mou?`<div class="field"><label for="pdp-mou">MoU number</label><select class="input" id="pdp-mou" data-pdp="mou">${opt(MOUS,d.mou)}</select></div>`
+        :`<div class="notice">${I.info}<span>Spot and list price buying are outside this prototype. Choose <b>Buy under MoU</b> to continue.</span></div>`}
+      <div class="field"><label for="pdp-var">Variant</label><select class="input" id="pdp-var" data-pdp="variant">${opt(p.variants,d.variant)}</select></div>
+      <div class="field"><label for="pdp-qty">Quantity</label><div class="stepper"><button aria-label="Decrease quantity" data-a="pqty" data-d="-1">−</button><input id="pdp-qty" class="num" type="number" min="1" value="${d.qty}" data-pdp="qty"><button aria-label="Increase quantity" data-a="pqty" data-d="1">+</button><span class="unit">MT</span></div></div>
+      <div class="field"><span class="lbl">Delivery in</span><div class="months" role="group" aria-label="Delivery month">${MONTHS.map(m=>`<button aria-pressed="${d.month===m}" data-a="pmonth" data-m="${esc(m)}"><b>${mShort(m)}</b><small>${mYear(m)}</small></button>`).join('')}</div><span class="hint">Current month plus the next 3 months</span></div>
+      <div class="summary-line"><span>Order</span><b class="num">${n0(d.qty)} MT · ${esc(d.month)}</b></div>
+      <div class="btn-pair"><button class="btn btn-outline btn-lg" ${mou?'':'disabled'} data-a="addcart">${I.cart}Add to cart</button><button class="btn btn-primary btn-lg" ${mou?'':'disabled'} data-a="planpdp">Plan order</button></div>
+    </div></aside>
   </div>`;
 }
 
+/* ---------- cart / planner ---------- */
+function allocHTML(c,i){
+  const a=sum(c.rows),q=+c.qty||0,pct=q?Math.min(100,a/q*100):0,cls=a===q?'full':a>q?'over':'under';
+  const txt=a===q?`${n0(a)} of ${n0(q)} MT priced`:a>q?`${n0(a-q)} MT over the order`:`${n0(q-a)} MT left to price`;
+  return `<div class="alloc ${cls}" id="al${i}"><span class="track"><span class="fill" style="width:${pct}%"></span></span><span>${txt}</span></div>`;
+}
 function viewCart(){
   const items=S.cart;
-  const top=`<div><button class="iconbtn" aria-label="Back to catalog" data-a="nav" data-to="catalog">${I.back}</button></div>`;
-  if(!items.length)return top+`<div class="card"><div class="empty"><b style="color:var(--fg);font-size:16px">Your cart is empty</b>Add a product from the catalog to plan an order.<button class="btn btn-blue" data-a="nav" data-to="catalog">Go to catalog</button></div></div>`;
+  const steps=`<div class="steps" aria-label="Progress"><span class="s done"><i>✓</i>Choose product</span><span class="bar done"></span><span class="s cur"><i>2</i>Set price types</span><span class="bar"></span><span class="s"><i>3</i>Submit for approval</span></div>`;
+  const head=`<div class="page-head"><div><div class="crumbs"><button data-a="nav" data-to="catalog">Catalog</button>${I.chev}<span>Cart</span></div><h1>Plan order</h1><p>Split each product's quantity across price types, then submit it for approval.</p></div>${items.length?steps:''}</div>`;
+  if(!items.length)return head+`<div class="card"><div class="empty"><span class="ill">${I.cart}</span><b>Your cart is empty</b><span>Add a product from the catalog to plan an order.</span><button class="btn btn-primary" data-a="nav" data-to="catalog">Browse catalog</button></div></div>`;
   const phys=items.reduce((a,c)=>a+(+c.qty||0),0),price=items.reduce((a,c)=>a+sum(c.rows),0);
-  return top+`<div class="cart"><div class="card">${items.map((c,i)=>{const p=P(c.pid);return `<div class="citem">
-    <div class="chead"><div class="thumb">${ingot(p.img)}</div>
-      <div style="display:flex;flex-direction:column;gap:10px"><div><h2 style="font-size:18px;font-weight:500">${esc(p.cartName||c.variant)}</h2><span style="font-size:12.5px;color:var(--muted)">${esc(c.variant)} · MoU ${esc(c.mou)}</span></div>
-        <div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-end">
-          <div class="field"><label for="cq${i}">Qty (MT)</label><div class="stepper sm"><button aria-label="Decrease" data-a="cqty" data-i="${i}" data-d="-1">−</button><input id="cq${i}" class="num" type="number" min="1" value="${c.qty}" data-cart="qty" data-i="${i}"><button aria-label="Increase" data-a="cqty" data-i="${i}" data-d="1">+</button></div></div>
-          <div class="field" style="min-width:220px"><label for="cm${i}">Delivery in</label><select class="in" id="cm${i}" data-cart="month" data-i="${i}">${opt(MONTHS,c.month)}</select></div>
-          <button class="trash" aria-label="Remove ${esc(p.name)} from cart" data-a="cdel" data-i="${i}">${I.trash}</button>
-        </div></div></div>
-    <div class="ptc"><h4>Price Type Comparison</h4>
-      ${c.rows.map((r,j)=>`<div class="prow">
-        <div class="field"><label for="rq${i}_${j}">Qty (MT)</label><input class="in num" id="rq${i}_${j}" type="number" min="0" value="${r.qty}" data-row="qty" data-i="${i}" data-j="${j}"></div>
-        <div class="field"><label for="rt${i}_${j}">Price Type</label><select class="in${UI.cartErr&&!r.type?' err':''}" id="rt${i}_${j}" data-row="type" data-i="${i}" data-j="${j}">${opt(PRICE_TYPES,r.type,'Price Type')}</select></div>
-        <div class="field"><label for="rm${i}_${j}">Price In</label><select class="in" id="rm${i}_${j}" data-row="month" data-i="${i}" data-j="${j}">${opt(MONTHS,r.month)}</select></div>
-        ${j?`<button class="trash" aria-label="Remove price type row" data-a="rdel" data-i="${i}" data-j="${j}">${I.x}</button>`:'<span></span>'}
-      </div>`).join('')}
-      <div><button class="btn btn-quiet upper" style="font-size:13px" data-a="radd" data-i="${i}" ${c.rows.length>=PRICE_TYPES.length?'disabled':''}>Add another price type</button></div>
-      <div id="mis${i}" class="err-text">${sum(c.rows)!==+c.qty?`Price type quantities add up to ${sum(c.rows)} MT. They must equal the order quantity of ${c.qty} MT.`:''}</div>
-    </div></div>`}).join('')}</div>
-    <aside class="card sum"><div class="sum-row"><span>Net Physical Delivery :</span><span class="num" id="sPhys">${phys} MT</span></div>
-      <div class="sum-row"><span>Net Pricing Qty :</span><span class="num" id="sPrice">${price} MT</span></div>
-      <div style="padding:20px 18px;display:flex;flex-direction:column;gap:12px">
-        ${UI.cartErr?`<div class="notice bad" role="alert">${esc(UI.cartErr)}</div>`:''}
-        <button class="btn btn-blue btn-block upper" data-a="plancart">Plan order</button>
-        <span style="font-size:12px;color:var(--muted)">Each product becomes one planned order and goes to the ASM for approval.</span>
-      </div></aside></div>`;
+  return head+`<div class="planner"><div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+  ${items.map((c,i)=>{const p=P(c.pid);return `<section class="card citem"><div class="card-h">
+      <div class="ttl"><span class="thumb">${ingot(p.img)}</span><div style="min-width:0"><h3>${esc(p.cartName||p.name)}</h3><div class="muted" style="font-size:12.5px">${esc(c.variant)} · <span class="mono" style="font-size:12px">${esc(c.mou)}</span></div></div></div>
+      <button class="icon-btn" aria-label="Remove ${esc(p.name)} from cart" data-a="cdel" data-i="${i}">${I.trash}</button></div>
+    <div class="card-b">
+      <div class="ctrls">
+        <div class="field"><label for="cq${i}">Quantity</label><div class="stepper sm"><button aria-label="Decrease" data-a="cqty" data-i="${i}" data-d="-1">−</button><input id="cq${i}" class="num" type="number" min="1" value="${c.qty}" data-cart="qty" data-i="${i}"><button aria-label="Increase" data-a="cqty" data-i="${i}" data-d="1">+</button><span class="unit">MT</span></div></div>
+        <div class="field"><span class="lbl">Delivery in</span><div style="display:flex;gap:6px;flex-wrap:wrap" role="group" aria-label="Delivery month">${MONTHS.map(m=>`<button class="chip" aria-pressed="${c.month===m}" data-a="cmonth" data-i="${i}" data-m="${esc(m)}">${esc(m)}</button>`).join('')}</div></div>
+      </div>
+      <div class="split"><div class="split-h"><h4>Price types</h4>${allocHTML(c,i)}</div>
+        ${c.rows.map((r,j)=>`<div class="prow">
+          <div class="field"><label for="rt${i}_${j}">Price type</label><select class="input${UI.cartErr&&!r.type?' err':''}" id="rt${i}_${j}" data-row="type" data-i="${i}" data-j="${j}">${opt(PRICE_TYPES,r.type,'Select price type')}</select></div>
+          <div class="field"><label for="rm${i}_${j}">Price in</label><select class="input" id="rm${i}_${j}" data-row="month" data-i="${i}" data-j="${j}">${opt(MONTHS,r.month)}</select></div>
+          <div class="field"><label for="rq${i}_${j}">Qty (MT)</label><input class="input num" id="rq${i}_${j}" type="number" min="0" value="${r.qty}" data-row="qty" data-i="${i}" data-j="${j}"></div>
+          ${j?`<button class="icon-btn" aria-label="Remove price type row" data-a="rdel" data-i="${i}" data-j="${j}">${I.x}</button>`:'<span></span>'}</div>`).join('')}
+        <div class="split-f"><button class="btn btn-soft btn-sm" data-a="radd" data-i="${i}" ${c.rows.length>=PRICE_TYPES.length?'disabled':''}>${I.plus}Add price type</button></div>
+      </div>
+    </div></section>`}).join('')}
+  </div>
+  <aside class="card sum-card"><div class="card-h"><h3>Order summary</h3><span class="muted" style="font-size:13px">${items.length} product${items.length>1?'s':''}</span></div>
+    <div class="sum-row"><span>Net physical delivery</span><b class="num" id="sPhys">${n0(phys)} MT</b></div>
+    <div class="sum-row"><span>Net pricing qty</span><b class="num" id="sPrice">${n0(price)} MT</b></div>
+    <div class="route"><span class="eyebrow">Approval route</span><div class="route-line"><span>${I.user}You</span><em>${I.chev}</em><span>${I.shield}ASM</span><em>${I.chev}</em><span>${I.crown}RM</span></div>
+      <span class="hint">Each product becomes its own planned order.</span></div>
+    <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+      ${UI.cartErr?`<div class="notice bad" role="alert">${I.info}<span>${esc(UI.cartErr)}</span></div>`:''}
+      <button class="btn btn-primary btn-lg btn-block" data-a="plancart">Plan order</button>
+      <button class="btn btn-outline btn-block" data-a="nav" data-to="catalog">Add another product</button>
+    </div></aside></div>`;
 }
 
-function statusCell(po){
-  const s=ST[po.status];const last=po.history[po.history.length-1];
-  let hint=s.hint;
-  if(po.status==='rejected')hint=`By ${last.by}${last.remark?`: ${last.remark}`:''}`;
-  return `<span class="st ${s.cls}">${s.label}</span>${hint?`<div class="st-hint">${esc(hint)}</div>`:''}`;
-}
-function actionsCell(po){
-  const u=S.user;
-  if(u==='customer'&&po.status==='approved')return `<div class="acts">
-    <button class="act" data-a="toast" data-msg="Create Delivery flow will be added next">${I.del}Create Delivery</button>
-    <button class="act" data-a="toast" data-msg="Proforma Invoice is outside this prototype">${I.inv}Proforma Invoice</button>
-    <button class="act" data-a="toast" data-msg="Preponement is outside this prototype">${I.swap}Preponement</button>
-    <button class="act" data-a="toast" data-msg="Rollover is outside this prototype">${I.roll}Rollover</button></div>`;
-  if(u==='asm'&&po.status==='created')return `<div class="acts"><button class="act" data-a="edit" data-id="${po.id}">${I.edit}Edit</button><button class="act ok" data-a="approve" data-id="${po.id}">${I.check}Approve</button><button class="act bad" data-a="reject" data-id="${po.id}">${I.ban}Reject</button></div>`;
-  if(u==='rm'&&po.status==='asm')return `<div class="acts"><button class="act" data-a="view" data-id="${po.id}">${I.eye}View</button><button class="act ok" data-a="approve" data-id="${po.id}">${I.check}Approve</button><button class="act bad" data-a="reject" data-id="${po.id}">${I.ban}Reject</button></div>`;
-  return '–';
-}
-
-function viewOrders(){
+/* ---------- orders ---------- */
+function ordersHead(title,desc){
   const tabs=[['po','Planned Orders'],['pb','Price Bookings'],['do','Delivery Orders'],['spot','Spot Orders'],['lp','LP Sales Order']];
-  const label=tabs.find(t=>t[0]===UI.otab)[1];
-  const head=`<nav class="crumb" aria-label="Breadcrumb"><button data-a="otab" data-k="po">Procurement</button><span class="sep">›</span><button data-a="otab" data-k="po">Orders</button><span class="sep">›</span><span>${label}</span></nav>
-  <div class="otabs" role="tablist">${tabs.map(([k,t])=>`<button role="tab" aria-selected="${UI.otab===k}" class="${UI.otab===k?'on':''}" data-a="otab" data-k="${k}">${t}</button>`).join('')}</div>
-  <div class="seg">${['LME','INR Pricing'].map(x=>`<button class="${UI.pricing===x?'on':''}" data-a="pricing" data-k="${x}">${x}</button>`).join('')}</div>`;
-  if(UI.otab==='po')return head+viewPOList();
-  if(UI.otab==='pb')return head+viewBookings();
-  return head+`<div class="card"><div class="empty"><b style="color:var(--fg)">${label}</b>This tab is outside this prototype. Delivery orders will be added when we design the delivery flow.</div></div>`;
+  return `<div class="page-head"><div><div class="crumbs"><span>Procurement</span>${I.chev}<span>Orders</span></div><h1>${title}</h1><p>${desc}</p></div></div>
+  <div class="subnav"><div class="tabs" role="tablist">${tabs.map(([k,t])=>`<button role="tab" aria-selected="${UI.route===k}" data-a="nav" data-to="${k}">${t}</button>`).join('')}</div>
+    <div class="seg" role="group" aria-label="Pricing basis" style="margin-bottom:8px">${['LME','INR Pricing'].map(x=>`<button aria-pressed="${UI.pricing===x}" data-a="pricing" data-k="${x}">${x}</button>`).join('')}</div></div>`;
 }
-
-function viewPOList(){
+function tracker(po){
+  const h=po.history;const asm=h.find(x=>x.by==='ASM'&&x.action!=='Edited'),rm=h.find(x=>x.by==='RM');
+  const c2=asm?(asm.action==='Rejected'?'r':'d'):po.status==='created'?'c':'';
+  const c3=rm?(rm.action==='Rejected'?'r':'d'):po.status==='asm'?'c':'';
+  return `<div class="track3" aria-hidden="true"><i class="d"></i><u class="${c2==='d'?'d':''}"></u><i class="${c2}"></i><u class="${c3==='d'?'d':''}"></u><i class="${c3}"></i></div>`;
+}
+function statusBlock(po){
+  const s=ST[po.status],last=po.history[po.history.length-1];
+  const hint=po.status==='rejected'?`By ${last.by}${last.remark?`: ${last.remark}`:''}`:s.hint;
+  return `<div class="cell">${tracker(po)}<span><span class="pill ${s.cls}">${s.label}</span></span><span class="sub">${esc(hint)}</span></div>`;
+}
+function actions(po){
+  const u=S.user;
+  if(u==='customer'&&po.status==='approved')return `<div class="acts"><button class="btn btn-primary btn-sm" data-a="toast" data-msg="Create Delivery will be designed in the next step" data-tone="info">${I.truck}Create delivery</button>
+    <button class="icon-btn sm" title="Proforma invoice" aria-label="Proforma invoice" data-a="toast" data-msg="Proforma invoice is outside this prototype" data-tone="info">${I.inv}</button>
+    <button class="icon-btn sm" title="Preponement" aria-label="Preponement" data-a="toast" data-msg="Preponement is outside this prototype" data-tone="info">${I.swap}</button>
+    <button class="icon-btn sm" title="Rollover" aria-label="Rollover" data-a="toast" data-msg="Rollover is outside this prototype" data-tone="info">${I.roll}</button></div>`;
+  const can=(u==='asm'&&po.status==='created')||(u==='rm'&&po.status==='asm');
+  if(can)return `<div class="acts"><button class="btn btn-ok-soft btn-sm" data-a="approve" data-id="${po.id}">${I.check}Approve</button><button class="btn btn-danger-soft btn-sm" data-a="reject" data-id="${po.id}">${I.ban}Reject</button>
+    ${u==='asm'?`<button class="icon-btn sm" title="Edit order" aria-label="Edit ${po.id}" data-a="edit" data-id="${po.id}">${I.edit}</button>`:''}</div>`;
+  return `<button class="btn btn-outline btn-sm" data-a="view" data-id="${po.id}">${I.eye}View</button>`;
+}
+function viewPO(){
   const u=S.user,approver=u!=='customer';
+  const counts={};Object.keys(ST).forEach(k=>counts[k]=S.pos.filter(p=>p.status===k).length);
+  const mineKey=u==='asm'?'created':u==='rm'?'asm':'';
   let list=S.pos.slice().sort((a,b)=>b.created.localeCompare(a.created));
-  const pend=pending();
-  if(approver&&UI.queue==='mine')list=pend;
+  if(UI.stat)list=list.filter(p=>p.status===UI.stat);
   if(UI.search)list=list.filter(p=>p.id.toLowerCase().includes(UI.search.toLowerCase()));
   if(UI.product)list=list.filter(p=>p.variant===UI.product);
   const prodOpts=[...new Set(S.pos.map(p=>p.variant))];
-  const queue=approver?`<div class="queue"><button class="${UI.queue==='mine'?'on':''}" data-a="queue" data-k="mine">Awaiting my approval (${pend.length})</button><button class="${UI.queue==='all'?'on':''}" data-a="queue" data-k="all">All orders (${S.pos.length})</button></div>`:'';
-  const rows=list.map(po=>`<tr class="${UI.flash[po.id]?'flash':''}">
-    <td><button class="pid" data-a="view" data-id="${po.id}">${po.id}</button>${UI.flash[po.id]?'<span class="new-pill">NEW</span>':''}</td>
-    <td><div class="stack"><span>Price Type: ${esc(priceTypeText(po.rows))}</span><span>Delivery In: ${esc(po.month)}</span><span>MoU No: ${esc(po.mou)}</span>${approver?`<span style="color:var(--muted)">Customer: ${esc(ROLES.customer.sub)}</span>`:''}</div></td>
-    <td>${esc(priceInText(po.rows))}</td>
-    <td>${esc(po.variant)}</td>
-    <td class="num"><div class="stack"><span>Net Physical Qty : ${n2(po.qty)}</span><span>Net Pricing Qty : ${n2(sum(po.rows))}</span><span>Planned : ${n2(po.qty)}</span><span>Delivered : ${n2(po.delivered)}</span></div></td>
-    <td class="num">${fmt(po.created).replace(/ (\d)/,'<br>$1')}</td>
-    <td>${statusCell(po)}</td>
-    <td>${actionsCell(po)}</td></tr>`).join('');
-  return `${queue}<div class="card"><div class="filters">
-    <div class="field"><label for="f-date">Created between</label><input class="in" id="f-date" value="26/04/2026 - 26/10/2026" readonly></div>
-    <div class="field"><label for="f-search">PO ID</label><input class="in" id="f-search" placeholder="Search order" value="${esc(UI.search)}"></div>
-    <div class="field"><label for="f-prod">Product</label><select class="in" id="f-prod">${opt(prodOpts,UI.product,'Product Description')}</select></div>
-    <div class="grow"></div>
-    <div class="fact"><button class="btn btn-blue" data-a="apply">APPLY</button><button class="link" style="color:var(--fg);font-weight:700" data-a="clear">Clear All</button><button class="link" data-a="toast" data-msg="Export is outside this prototype">Export Data</button></div>
-    <div class="pager" style="flex-basis:100%;justify-content:flex-end">Showing ${list.length?1:0} - ${list.length} of ${list.length}<b>1</b></div>
-  </div></div>
-  <div class="card tbl-wrap">${list.length?`<table class="list"><thead><tr><th>PO ID</th><th>Order Details</th><th>Price In</th><th>Product Description</th><th>Quantity (MT)</th><th>Created Date</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`
-    :`<div class="empty"><b style="color:var(--fg)">${approver&&UI.queue==='mine'?'Nothing is waiting for your approval':'No orders match these filters'}</b>${approver&&UI.queue==='mine'?(u==='asm'?'New planned orders from customers appear here.':'Orders approved by the ASM appear here.'):'Clear the filters to see all orders.'}</div>`}</div>`;
+  const tile=(k,lbl,color,small)=>`<button class="stat" aria-pressed="${UI.stat===k}" data-a="stat" data-k="${k}">${k===mineKey?'<span class="mine">Your queue</span>':''}<span class="lbl"><i style="background:${color}"></i>${lbl}</span><b class="num">${counts[k]}</b><small>${small}</small></button>`;
+  const rows=list.map(po=>{const pr=P(po.pid);return `<tr class="${UI.flash[po.id]?'flash':''}">
+    <td><div class="cell"><span><button class="idbtn" data-a="view" data-id="${po.id}">${po.id}</button>${UI.flash[po.id]?'<span class="new">NEW</span>':''}</span><span class="sub num">${fmt(po.created)}</span>${approver?`<span class="sub">${esc(ROLES.customer.sub)}</span>`:''}</div></td>
+    <td><div class="cell"><b style="font-weight:500">${esc(po.variant)}</b><span class="sub"><span class="tag ${pr.type.toLowerCase()}" style="height:20px">${pr.type}</span> · MoU <span class="mono" style="font-size:12px">${po.mou}</span></span></div></td>
+    <td><div class="ptchips">${po.rows.map(r=>`<span class="ptchip"><b>${esc(r.type)}</b><em class="num">${n0(r.qty)} MT · ${esc(r.month)}</em></span>`).join('')}</div></td>
+    <td><div class="cell"><b style="font-weight:500">${esc(po.month)}</b><span class="sub">Delivery in</span></div></td>
+    <td><div class="qty-grid num"><span>Net physical</span><b>${n2(po.qty)}</b><span>Net pricing</span><b>${n2(sum(po.rows))}</b><span>Delivered</span><b>${n2(po.delivered)}</b><span class="dbar"><i style="width:${po.qty?po.delivered/po.qty*100:0}%"></i></span></div></td>
+    <td>${statusBlock(po)}</td><td>${actions(po)}</td></tr>`}).join('');
+  const emptyMsg=UI.stat===mineKey&&approver?`<span class="ill">${I.check}</span><b>Your queue is clear</b><span>${u==='asm'?'New planned orders from customers appear here.':'Orders approved by the ASM appear here for final approval.'}</span>`
+    :`<span class="ill">${I.clip}</span><b>No planned orders match</b><span>Try another status tile or clear the filters.</span>`;
+  return ordersHead('Planned Orders',approver?'Review planned orders in sequence: the ASM approves first, then the RM gives final approval.':'Track your planned orders through ASM and RM approval.')+`
+  <div class="stats">${tile('created','Created','var(--blue)','Awaiting ASM')}${tile('asm','ASM Approved','#F79009','Awaiting RM')}${tile('approved','Approved','var(--green)','Ready for delivery')}${tile('rejected','Rejected','var(--red)','By ASM or RM')}</div>
+  <div class="card"><div class="toolbar">
+    <div class="search-in">${I.search}<input class="input" id="f-search" placeholder="Search PO number" value="${esc(UI.search)}" aria-label="Search PO number"></div>
+    <select class="input" id="f-prod" aria-label="Product">${opt(prodOpts,UI.product,'All products')}</select>
+    <span class="chip" style="cursor:default">${I.cal}26 Apr 2026 – 26 Oct 2026</span>
+    <div class="right">${UI.stat||UI.search||UI.product?`<button class="btn btn-outline btn-sm" data-a="clear">Clear filters</button>`:''}<button class="btn btn-primary btn-sm" data-a="apply">Apply</button><button class="btn btn-outline btn-sm" data-a="toast" data-msg="Export is outside this prototype" data-tone="info">Export</button></div></div>
+  <div class="tbl-wrap">${list.length?`<table class="tbl"><thead><tr><th>PO number</th><th>Product</th><th>Price types</th><th>Delivery</th><th>Quantity (MT)</th><th>Approval</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`:`<div class="empty">${emptyMsg}</div>`}</div>
+  <div class="foot"><span>Showing ${list.length} of ${S.pos.length} planned orders${UI.stat?` · ${ST[UI.stat].label}`:''}</span><div class="pager"><button aria-current="page">1</button></div></div></div>`;
 }
-
-function viewBookings(){
+function viewPB(){
   const all=S.bookings;
-  const monthsSet=[...new Set([...all.map(b=>b.month),...MONTHS.map(toBk)])].sort((a,b)=>bkKey(a)-bkKey(b));
+  const ms=[...new Set([...all.map(b=>b.month),...MONTHS.map(toBk)])].sort((a,b)=>bkKey(a)-bkKey(b));
   let list=all.filter(b=>b.month===UI.bkMonth);
   if(UI.bkType)list=list.filter(b=>b.type===UI.bkType);
   if(UI.bkProduct)list=list.filter(b=>b.ptype===UI.bkProduct);
   list=list.slice().sort((a,b)=>b.created.localeCompare(a.created));
-  const tot=t=>list.filter(b=>b.type===t).reduce((a,b)=>a+b.qty,0);
-  const idx=monthsSet.indexOf(UI.bkMonth);
-  const rows=list.map(b=>{const k=b.ticket;const po=S.pos.find(p=>p.id===b.dealId);const open=UI.expanded[k];
-    return `<tr class="${UI.newBk[k]?'flash':''}"><td><button class="iconbtn" style="width:28px;height:28px" aria-label="${open?'Collapse':'Expand'} ${b.dealId}" aria-expanded="${!!open}" data-a="bkx" data-k="${k}">${open?I.minus:I.plus}</button></td>
-      <td><b>${b.dealId}</b>${UI.newBk[k]?'<span class="new-pill">NEW</span>':''}<br><b>Product Type: ${b.ptype}</b></td>
-      <td class="num"><b>PDT: ${b.ticket}</b>${b.apdt?`<br><b>APDT:<br>${b.apdt}</b>`:''}</td>
-      <td>${esc(b.type)}</td>
-      <td class="num"><b>Pricing Qty: ${b.qty}</b><br><b>Balance Qty: ${b.bal}</b></td>
-      <td>${b.month}</td><td>–</td><td class="num"><b>${fmtBk(b.created)}</b></td><td>–</td><td>–</td>
-      <td>${S.user==='customer'&&b.bal>0?`<button class="act" data-a="toast" data-msg="Price booking will be designed in the next step">${I.book}Book Price</button>`:'–'}</td></tr>
-      ${open?`<tr class="subrow"><td></td><td colspan="10"><div class="kv">
-        <div><span>Product description</span>${esc(po?po.variant:'—')}</div><div><span>MoU No</span>${esc(po?po.mou:'—')}</div>
-        <div><span>Delivery In</span>${esc(po?po.month:'—')}</div><div><span>PO quantity</span>${po?n2(po.qty)+' MT':'—'}</div>
-        <div><span>Final approval</span>${po?esc(fmt(po.history[po.history.length-1].at)):'—'}</div></div></td></tr>`:''}`}).join('');
-  return `<div class="card"><div class="filters" style="align-items:center">
-    <div class="field"><span style="font-size:13px;font-weight:500">Price In</span><div class="monthnav"><button aria-label="Previous month" data-a="bkm" data-d="-1" ${idx<=0?'disabled':''}>‹</button><span class="num">${UI.bkMonth}</span><button aria-label="Next month" data-a="bkm" data-d="1" ${idx>=monthsSet.length-1?'disabled':''}>›</button></div></div>
-    <div class="field"><label for="bk-type">Price Type</label><select class="in" id="bk-type">${opt(PRICE_TYPES,UI.bkType,'Price Type')}</select></div>
-    <div class="field"><label for="bk-prod">Product Type</label><select class="in" id="bk-prod">${opt(['Zinc','Lead'],UI.bkProduct,'Product Type')}</select></div>
-    <div class="grow"></div>
-    <div class="stack" style="align-items:flex-end"><div class="fact"><button class="btn btn-blue" data-a="bkapply">APPLY</button><button class="link" style="color:var(--fg);font-weight:700" data-a="bkclear">Clear All</button><button class="link" data-a="toast" data-msg="Export is outside this prototype">Export Data</button></div>
-    <div class="totals num"><span>Total Monthly Average Quantity: <b>${tot('Monthly Average')}</b></span><span>Total Day CSP Quantity: <b>${tot('Day CSP')}</b></span><span>Total M-1 Quantity: <b>${tot('M-1')}</b></span></div></div>
-  </div></div>
-  <div class="card tbl-wrap">${list.length?`<table class="list"><thead><tr><th></th><th>Deal Id</th><th>Deal Ticket ID</th><th>Price Type</th><th>Quantity(MT)</th><th>Price In</th><th>Price Booked</th><th>Created Date</th><th>Status</th><th>Contango</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`
-    :`<div class="empty"><b style="color:var(--fg)">No price bookings for ${UI.bkMonth}</b>An entry appears here when the RM gives final approval to a planned order priced in this month.</div>`}</div>`;
+  const tot=t=>list.filter(b=>b.type===t).reduce((a,b)=>a+b.qty,0);const bal=list.reduce((a,b)=>a+b.bal,0);
+  const idx=ms.indexOf(UI.bkMonth);
+  const tile=(lbl,v,color,s)=>`<div class="stat" style="cursor:default"><span class="lbl"><i style="background:${color}"></i>${lbl}</span><b class="num">${n0(v)}</b><small>${s}</small></div>`;
+  const rows=list.map(b=>{const k=b.ticket,po=S.pos.find(p=>p.id===b.dealId),open=UI.expanded[k];
+    return `<tr class="${UI.newBk[k]?'flash':''}"><td style="width:44px"><button class="icon-btn sm" aria-label="${open?'Hide':'Show'} details for ${b.dealId}" aria-expanded="${!!open}" data-a="bkx" data-k="${k}"><span style="display:inline-block;transform:rotate(${open?90:0}deg);transition:transform .15s">${I.chev}</span></button></td>
+      <td><div class="cell"><span><button class="idbtn" data-a="view" data-id="${b.dealId}">${b.dealId}</button>${UI.newBk[k]?'<span class="new">NEW</span>':''}</span><span class="sub"><span class="tag ${b.ptype.toLowerCase()}" style="height:20px">${b.ptype}</span></span></div></td>
+      <td><div class="cell"><span class="mono">PDT ${b.ticket}</span>${b.apdt?`<span class="sub mono" style="font-size:12px">APDT ${b.apdt}</span>`:''}</div></td>
+      <td><span class="pill plain p-gray">${esc(b.type)}</span></td>
+      <td><div class="qty-grid num"><span>Pricing</span><b>${n0(b.qty)}</b><span>Balance</span><b>${n0(b.bal)}</b><span class="dbar"><i style="width:${b.qty?(b.qty-b.bal)/b.qty*100:0}%;background:var(--blue)"></i></span></div></td>
+      <td>${b.month}</td><td class="muted">–</td><td><div class="cell num"><span>${fmtD(b.created)}</span><span class="sub">${fmtT(b.created)}</span></div></td><td class="muted">–</td>
+      <td>${S.user==='customer'&&b.bal>0?`<button class="btn btn-soft btn-sm" data-a="toast" data-msg="Book Price will be designed in a later step" data-tone="info">${I.cal}Book price</button>`:'<span class="muted">–</span>'}</td></tr>
+      ${open?`<tr class="subrow"><td></td><td colspan="9"><div class="kv"><div><span>Product</span><b>${esc(po?po.variant:'—')}</b></div><div><span>MoU</span><b class="mono">${esc(po?po.mou:'—')}</b></div><div><span>Delivery in</span><b>${esc(po?po.month:'—')}</b></div><div><span>PO quantity</span><b>${po?n2(po.qty)+' MT':'—'}</b></div><div><span>Final approval</span><b>${po?esc(fmt(po.history[po.history.length-1].at)):'—'}</b></div></div></td></tr>`:''}`}).join('');
+  return ordersHead('Price Bookings','An entry is created for each price type when the RM gives final approval to a planned order.')+`
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="eyebrow">Price in</span><div class="monthnav"><button aria-label="Previous month" data-a="bkm" data-d="-1" ${idx<=0?'disabled':''}>‹</button><b class="num">${UI.bkMonth}</b><button aria-label="Next month" data-a="bkm" data-d="1" ${idx>=ms.length-1?'disabled':''}>›</button></div></div>
+  <div class="stats">${tile('Day CSP',tot('Day CSP'),'var(--blue)','MT priced')}${tile('Monthly Average',tot('Monthly Average'),'var(--green)','MT priced')}${tile('M-1',tot('M-1'),'#F79009','MT priced')}${tile('Balance to book',bal,'var(--ink-3)','MT across entries')}</div>
+  <div class="card"><div class="toolbar">
+    <select class="input" id="bk-type" aria-label="Price type">${opt(PRICE_TYPES,UI.bkType,'All price types')}</select>
+    <select class="input" id="bk-prod" aria-label="Product type">${opt(['Zinc','Lead'],UI.bkProduct,'All product types')}</select>
+    <div class="right">${UI.bkType||UI.bkProduct?'<button class="btn btn-outline btn-sm" data-a="bkclear">Clear filters</button>':''}<button class="btn btn-primary btn-sm" data-a="bkapply">Apply</button><button class="btn btn-outline btn-sm" data-a="toast" data-msg="Export is outside this prototype" data-tone="info">Export</button></div></div>
+  <div class="tbl-wrap">${list.length?`<table class="tbl"><thead><tr><th></th><th>Deal ID</th><th>Deal ticket</th><th>Price type</th><th>Quantity (MT)</th><th>Price in</th><th>Price booked</th><th>Created</th><th>Contango</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table>`
+    :`<div class="empty"><span class="ill">${I.tag}</span><b>No price bookings for ${UI.bkMonth}</b><span>Entries appear here when the RM gives final approval to a planned order priced in this month.</span></div>`}</div>
+  <div class="foot"><span>Showing ${list.length} entr${list.length===1?'y':'ies'}</span><div class="pager"><button aria-current="page">1</button></div></div></div>`;
+}
+function viewSoon(){
+  const t={do:['Delivery Orders','Delivery orders will be added once we design the Create Delivery flow.'],spot:['Spot Orders','Spot orders are outside this prototype.'],lp:['LP Sales Order','LP sales orders are outside this prototype.']}[UI.route];
+  return ordersHead(t[0],'')+`<div class="card"><div class="empty"><span class="ill">${I.truck}</span><b>${t[0]}</b><span>${t[1]}</span></div></div>`;
 }
 
-/* ---------- modals ---------- */
-function flowSteps(po){
-  const h=po.history;const by=r=>h.find(x=>x.by===r&&(x.action==='Approved'||x.action==='Rejected'));
-  const a=by('ASM'),r=by('RM');
-  const step=(t,ev,state,txt)=>`<div class="step ${state}"><span class="dot">${state==='done'?'✓':state==='rej'?'✕':''}</span><b>${t}</b><small>${txt}</small></div>`;
-  return `<div class="flow">
-    ${step('Customer','', 'done',`Created ${fmt(po.created)}`)}
-    ${a?step('ASM · Approver 1','',a.action==='Rejected'?'rej':'done',`${a.action} ${fmt(a.at)}`):step('ASM · Approver 1','',po.status==='created'?'cur':'', po.status==='rejected'?'—':'Pending')}
-    ${r?step('RM · Final approver','',r.action==='Rejected'?'rej':'done',`${r.action} ${fmt(r.at)}`):step('RM · Final approver','',po.status==='asm'?'cur':'',po.status==='rejected'?'—':'Pending')}
+/* ---------- overlays ---------- */
+function timeline(po){
+  const h=po.history;const asm=h.find(x=>x.by==='ASM'&&x.action!=='Edited'),rm=h.find(x=>x.by==='RM');
+  const node=(state,title,who,ev,pend)=>`<div class="tl ${state}"><span class="dot">${state==='done'?I.check:state==='rej'?I.x:state==='cur'?'•':''}</span><div><b>${title}</b><small>${ev?`${ev.action} · ${fmt(ev.at)}`:pend}</small>${ev&&ev.remark?`<div class="rm">“${esc(ev.remark)}”</div>`:''}</div></div>`;
+  return `<div class="timeline">
+    ${node('done','Planned by customer','',{action:'Created',at:po.created},'')}
+    ${asm?node(asm.action==='Rejected'?'rej':'done','ASM review','',asm,''):node(po.status==='created'?'cur':'','ASM review','',null,po.status==='rejected'?'Not reached':'Waiting for ASM')}
+    ${rm?node(rm.action==='Rejected'?'rej':'done','RM final approval','',rm,''):node(po.status==='asm'?'cur':'','RM final approval','',null,po.status==='rejected'?'Not reached':'Waiting for RM')}
   </div>`;
 }
-function rowsTable(rows){return `<table class="mini num"><thead><tr><th>Price Type</th><th>Qty (MT)</th><th>Price In</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.type)}</td><td>${r.qty}</td><td>${esc(r.month)}</td></tr>`).join('')}</tbody></table>`}
-
+function rowsTable(rows){return `<table class="mini num"><thead><tr><th>Price type</th><th>Price in</th><th style="text-align:right">Qty (MT)</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.type)}</td><td>${esc(r.month)}</td><td style="text-align:right">${n0(r.qty)}</td></tr>`).join('')}</tbody></table>`}
+function viewDrawer(){
+  const id=UI.drawer;if(!id)return '';const po=S.pos.find(p=>p.id===id);if(!po)return '';
+  const u=S.user,can=(u==='asm'&&po.status==='created')||(u==='rm'&&po.status==='asm');
+  const bks=S.bookings.filter(b=>b.dealId===po.id);
+  return `<div class="scrim" data-a="dclose"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="${po.id}">
+    <div class="d-h"><div><div class="eyebrow">Planned order</div><h2>${po.id}</h2><div style="margin-top:8px"><span class="pill ${ST[po.status].cls}">${ST[po.status].label}</span></div></div><button class="icon-btn" aria-label="Close" data-a="dclose">${I.x}</button></div>
+    <div class="d-b">
+      <div><div class="sec-t">Approval</div>${timeline(po)}</div>
+      <div><div class="sec-t">Order</div><div class="kv"><div><span>Product</span><b>${esc(po.variant)}</b></div><div><span>Customer</span><b>${esc(ROLES.customer.sub)}</b></div><div><span>MoU</span><b class="mono">${po.mou}</b></div><div><span>Delivery in</span><b>${po.month}</b></div><div><span>Net physical</span><b class="num">${n2(po.qty)} MT</b></div><div><span>Net pricing</span><b class="num">${n2(sum(po.rows))} MT</b></div></div></div>
+      <div><div class="sec-t">Price types</div>${rowsTable(po.rows)}</div>
+      ${bks.length?`<div><div class="sec-t">Price bookings</div><div class="kv">${bks.map(b=>`<div><span>${esc(b.type)} · ${b.month}</span><b class="mono">PDT ${b.ticket}</b></div>`).join('')}</div></div>`:''}
+      <div><div class="sec-t">History</div><div class="log">${po.history.slice().reverse().map(x=>`<div><time class="num">${fmt(x.at)}</time><span><b>${x.by}</b> ${esc(x.action.toLowerCase())}${x.remark?` · ${esc(x.remark)}`:''}</span></div>`).join('')}</div></div>
+    </div>
+    <div class="d-f">${can?`<button class="btn btn-danger-soft" data-a="reject" data-id="${po.id}">${I.ban}Reject</button>${u==='asm'?`<button class="btn btn-outline" data-a="edit" data-id="${po.id}">${I.edit}Edit</button>`:''}<button class="btn btn-primary" data-a="approve" data-id="${po.id}">${I.check}${u==='rm'?'Give final approval':'Approve'}</button>`
+      :u==='customer'&&po.status==='approved'?`<button class="btn btn-primary" data-a="toast" data-msg="Create Delivery will be designed in the next step" data-tone="info">${I.truck}Create delivery</button>`:`<button class="btn btn-outline" data-a="dclose">Close</button>`}</div>
+  </aside>`;
+}
 function viewModal(){
-  const m=UI.modal;if(!m)return '';
-  const po=S.pos.find(p=>p.id===m.id);
-  const close=`<button class="iconbtn" aria-label="Close" data-a="mclose">${I.x}</button>`;
-  let inner='';
-  if(m.kind==='view'){
-    inner=`<div class="m-h"><h2>${po.id}</h2>${close}</div><div class="m-b">
-      ${flowSteps(po)}
-      <div class="kv"><div><span>Status</span>${statusCell(po)}</div><div><span>Product</span>${esc(po.variant)}</div><div><span>Product type</span>${P(po.pid).type}</div><div><span>MoU No</span>${po.mou}</div>
-        <div><span>Delivery In</span>${po.month}</div><div><span>Net Physical Qty</span>${n2(po.qty)} MT</div><div><span>Net Pricing Qty</span>${n2(sum(po.rows))} MT</div><div><span>Customer</span>${esc(ROLES.customer.sub)}</div></div>
-      ${rowsTable(po.rows)}
-      <div><div style="font-weight:500;margin-bottom:8px">History</div><div class="hist">${po.history.map(x=>`<div><time>${fmt(x.at)}</time><span><b>${x.by}</b> · ${esc(x.action)}${x.remark?` — “${esc(x.remark)}”`:''}</span></div>`).join('')}</div></div>
-    </div><div class="m-f">${(S.user==='asm'&&po.status==='created')||(S.user==='rm'&&po.status==='asm')?`<button class="btn btn-quiet" data-a="reject" data-id="${po.id}">Reject</button>${S.user==='asm'?`<button class="btn btn-line" data-a="edit" data-id="${po.id}">Edit</button>`:''}<button class="btn btn-blue" data-a="approve" data-id="${po.id}">Approve</button>`:`<button class="btn btn-quiet" data-a="mclose">Close</button>`}</div>`;
-  }
+  const m=UI.modal;if(!m)return '';const po=S.pos.find(p=>p.id===m.id);
+  const close=`<button class="icon-btn" aria-label="Close" data-a="mclose">${I.x}</button>`;let inner='';
   if(m.kind==='approve'||m.kind==='reject'){
     const rej=m.kind==='reject',final=S.user==='rm';
-    inner=`<div class="m-h"><h2>${rej?'Reject':'Approve'} ${po.id}</h2>${close}</div><div class="m-b">
-      <div class="kv"><div><span>Product</span>${esc(po.variant)}</div><div><span>Quantity</span>${n2(po.qty)} MT</div><div><span>Delivery In</span>${po.month}</div><div><span>Price types</span>${esc(priceTypeText(po.rows))}</div></div>
-      ${!rej?`<div class="notice${final?'':''}">${final?`This is the final approval. The order becomes <b>Approved</b>, the customer gets <b>Create Delivery</b>, and ${po.rows.length} price booking ${po.rows.length>1?'entries are':'entry is'} created.`:'The order goes to the RM for final approval.'}</div>`:'<div class="notice warn">The customer sees the order as Rejected along with your remark.</div>'}
-      <div class="field"><label for="remark">Remark${rej?' (required)':' (optional)'}</label><textarea class="in${m.err?' err':''}" id="remark" data-remark>${esc(m.remark||'')}</textarea>${m.err?`<span class="err-text">${esc(m.err)}</span>`:''}</div>
-    </div><div class="m-f"><button class="btn btn-quiet" data-a="mclose">Cancel</button><button class="btn ${rej?'btn-bad':'btn-blue'}" data-a="mconfirm">${rej?'Reject order':final?'Give final approval':'Approve and send to RM'}</button></div>`;
+    inner=`<div class="m-h"><div><h2>${rej?'Reject':final?'Final approval for':'Approve'} <span class="mono" style="font-size:17px">${po.id}</span></h2><p>${esc(po.variant)} · ${n0(po.qty)} MT · ${po.month}</p></div>${close}</div>
+    <div class="m-b">
+      ${rejected_or_note(rej,final,po)}
+      <div class="field"><label for="remark">Remark${rej?'':' (optional)'}</label><textarea class="input${m.err?' err':''}" id="remark" data-remark placeholder="${rej?'Tell the customer why this order is rejected':'Add a note for the record'}">${esc(m.remark||'')}</textarea>${m.err?`<span class="err-text">${esc(m.err)}</span>`:''}</div>
+    </div><div class="m-f"><button class="btn btn-outline" data-a="mclose">Cancel</button><button class="btn ${rej?'btn-danger':'btn-primary'}" data-a="mconfirm">${rej?'Reject order':final?'Give final approval':'Approve and send to RM'}</button></div>`;
   }
   if(m.kind==='edit'){
-    const d=m.draft;const mis=sum(d.rows)!==+d.qty;
-    inner=`<div class="m-h"><h2>Edit ${po.id}</h2>${close}</div><div class="m-b">
-      <div class="kv"><div><span>Product</span>${esc(po.variant)}</div><div><span>MoU No</span>${po.mou}</div></div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
-        <div class="field"><label for="e-qty">Net Physical Qty (MT)</label><input class="in num" id="e-qty" type="number" min="1" value="${d.qty}" data-edit="qty"></div>
-        <div class="field"><label for="e-month">Delivery in</label><select class="in" id="e-month" data-edit="month">${opt(MONTHS.includes(d.month)?MONTHS:[d.month,...MONTHS],d.month)}</select></div>
-      </div>
-      <div style="font-weight:500;color:var(--muted)">Price Type Comparison</div>
-      ${d.rows.map((r,j)=>`<div class="prow">
-        <div class="field"><label for="eq${j}">Qty (MT)</label><input class="in num" id="eq${j}" type="number" min="0" value="${r.qty}" data-erow="qty" data-j="${j}"></div>
-        <div class="field"><label for="et${j}">Price Type</label><select class="in" id="et${j}" data-erow="type" data-j="${j}">${opt(PRICE_TYPES,r.type,'Price Type')}</select></div>
-        <div class="field"><label for="em${j}">Price In</label><select class="in" id="em${j}" data-erow="month" data-j="${j}">${opt(MONTHS.includes(r.month)?MONTHS:[r.month,...MONTHS],r.month)}</select></div>
-        ${j?`<button class="trash" aria-label="Remove row" data-a="erdel" data-j="${j}">${I.x}</button>`:'<span></span>'}</div>`).join('')}
-      <div><button class="btn btn-quiet upper" style="font-size:13px" data-a="eradd" ${d.rows.length>=PRICE_TYPES.length?'disabled':''}>Add another price type</button></div>
-      ${mis||m.err?`<div class="err-text" role="alert">${esc(m.err||`Price type quantities add up to ${sum(d.rows)} MT. They must equal ${d.qty} MT.`)}</div>`:''}
-    </div><div class="m-f"><button class="btn btn-quiet" data-a="mclose">Cancel</button><button class="btn btn-blue" data-a="esave">Save changes</button></div>`;
+    const d=m.draft,a=sum(d.rows),q=+d.qty||0,cls=a===q?'full':a>q?'over':'under';
+    inner=`<div class="m-h"><div><h2>Edit <span class="mono" style="font-size:17px">${po.id}</span></h2><p>${esc(po.variant)} · MoU ${po.mou}</p></div>${close}</div>
+    <div class="m-b">
+      <div style="display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:end">
+        <div class="field"><label for="e-qty">Quantity</label><div class="stepper sm"><input id="e-qty" class="num" type="number" min="1" value="${d.qty}" data-edit="qty"><span class="unit">MT</span></div></div>
+        <div class="field"><label for="e-month">Delivery in</label><select class="input" id="e-month" data-edit="month">${opt(MONTHS.includes(d.month)?MONTHS:[d.month,...MONTHS],d.month)}</select></div></div>
+      <div class="split" style="margin-top:0"><div class="split-h"><h4>Price types</h4><div class="alloc ${cls}"><span class="track"><span class="fill" style="width:${q?Math.min(100,a/q*100):0}%"></span></span><span>${n0(a)} of ${n0(q)} MT</span></div></div>
+        ${d.rows.map((r,j)=>`<div class="prow">
+          <div class="field"><label for="et${j}">Price type</label><select class="input" id="et${j}" data-erow="type" data-j="${j}">${opt(PRICE_TYPES,r.type,'Select price type')}</select></div>
+          <div class="field"><label for="em${j}">Price in</label><select class="input" id="em${j}" data-erow="month" data-j="${j}">${opt(MONTHS.includes(r.month)?MONTHS:[r.month,...MONTHS],r.month)}</select></div>
+          <div class="field"><label for="eq${j}">Qty (MT)</label><input class="input num" id="eq${j}" type="number" min="0" value="${r.qty}" data-erow="qty" data-j="${j}"></div>
+          ${j?`<button class="icon-btn" aria-label="Remove row" data-a="erdel" data-j="${j}">${I.x}</button>`:'<span></span>'}</div>`).join('')}
+        <div class="split-f"><button class="btn btn-soft btn-sm" data-a="eradd" ${d.rows.length>=PRICE_TYPES.length?'disabled':''}>${I.plus}Add price type</button></div></div>
+      ${m.err?`<div class="notice bad" role="alert">${I.info}<span>${esc(m.err)}</span></div>`:''}
+      <span class="hint">The customer is notified of every change you save.</span>
+    </div><div class="m-f"><button class="btn btn-outline" data-a="mclose">Cancel</button><button class="btn btn-primary" data-a="esave">Save changes</button></div>`;
   }
-  return `<div class="scrim" data-a="scrim"><div class="modal${m.kind==='view'||m.kind==='edit'?' wide':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
+  return `<div class="scrim" style="z-index:110" data-a="mclose"></div><div class="modal-wrap" style="z-index:111"><div class="modal${m.kind==='edit'?' wide':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
+}
+function rejected_or_note(rej,final,po){
+  if(rej)return `<div class="notice warn">${I.info}<span>The customer sees this order as Rejected, along with your remark.</span></div>`;
+  return final?`<div class="notice ok">${I.check}<span>This is the final approval. The order becomes Approved, the customer can create a delivery, and ${po.rows.length} price booking ${po.rows.length>1?'entries are':'entry is'} created.</span></div>`
+    :`<div class="notice">${I.info}<span>After you approve, the order goes to the RM for final approval.</span></div>`;
 }
 
 /* ---------- render ---------- */
 function render(){
-  const app=document.getElementById('app');
-  let html;
+  const app=document.getElementById('app');let html;
   if(!S.user)html=viewLogin();
-  else{
-    const r=UI.route;
-    const content=r==='catalog'?viewCatalog():r==='pdp'?viewPDP():r==='cart'?viewCart():viewOrders();
-    html=shell(content)+viewModal();
-  }
-  if(UI.toast)html+=`<div class="toast" role="status">${esc(UI.toast)}</div>`;
+  else{const r=UI.route;
+    const c=r==='catalog'?viewCatalog():r==='pdp'?viewPDP():r==='cart'?viewCart():r==='po'?viewPO():r==='pb'?viewPB():viewSoon();
+    html=shell(c)+viewDrawer()+viewModal();}
+  if(UI.loading)html+=loaderHTML();
+  if(UI.toast)html+=`<div class="toast ${UI.toast.tone}" role="status"><span class="ti">${UI.toast.tone==='info'?I.info:I.check}</span><span>${esc(UI.toast.msg)}</span></div>`;
   app.innerHTML=html;
 }
-function go(route){UI.route=route;UI.menu=null;render();window.scrollTo(0,0)}
+/* navigation through the Product KYC loader */
+let navTimer;
+function go(route,after,label){
+  clearTimeout(navTimer);UI.loading=true;UI.loadingLabel=label||'Loading…';UI.menu=null;UI.side=false;render();
+  navTimer=setTimeout(()=>{if(route)UI.route=route;if(after)after();UI.loading=false;UI.loadingSolid=false;render();window.scrollTo({top:0})},550);
+}
+function busy(label,fn){clearTimeout(navTimer);UI.loading=true;UI.loadingLabel=label;render();navTimer=setTimeout(()=>{UI.loading=false;fn();},550)}
 
 /* ---------- actions ---------- */
-function login(role){S.user=role;UI.loginErr='';UI.queue='mine';UI.otab='po';UI.search='';UI.product='';save();go(ROLES[role].home);
-  const n=pending().length;if(role!=='customer')toast(n?`${n} planned order${n>1?'s':''} awaiting your approval`:'Nothing is waiting for your approval');}
-function addToCart(){const d=UI.pdp;const qty=Math.max(1,+d.qty||1);
-  S.cart.push({pid:d.pid,variant:d.variant,mou:d.mou,qty,month:d.month,rows:[{qty,type:'',month:d.month}]});save()}
+function login(role){
+  UI.loadingSolid=true;
+  go(ROLES[role].home,()=>{S.user=role;UI.loginErr='';UI.stat=defaultStat(role);UI.search='';UI.product='';UI.drawer=null;UI.modal=null;save();
+    const n=pending().length;if(role!=='customer')setTimeout(()=>toast(n?`${n} planned order${n>1?'s are':' is'} waiting for your approval`:'Your approval queue is clear','info'),0);});
+}
+function addToCart(){const d=UI.pdp,qty=Math.max(1,+d.qty||1);S.cart.push({pid:d.pid,variant:d.variant,mou:d.mou,qty,month:d.month,rows:[{qty,type:'',month:d.month}]});save()}
 function validateCart(){
-  for(const c of S.cart){
-    if(!(+c.qty>0))return 'Enter a quantity of at least 1 MT for every product.';
-    if(c.rows.some(r=>!r.type))return 'Select a price type for every row.';
-    if(c.rows.some(r=>!(+r.qty>0)))return 'Enter a quantity for every price type row.';
-    if(new Set(c.rows.map(r=>r.type)).size!==c.rows.length)return 'Each price type can be used once per product.';
-    if(sum(c.rows)!==+c.qty)return `Price type quantities for ${P(c.pid).cartName||c.variant} must add up to ${c.qty} MT.`;
-  }return '';
+  for(const c of S.cart){const nm=P(c.pid).cartName||P(c.pid).name;
+    if(!(+c.qty>0))return `Enter a quantity of at least 1 MT for ${nm}.`;
+    if(c.rows.some(r=>!r.type))return `Select a price type for every row of ${nm}.`;
+    if(c.rows.some(r=>!(+r.qty>0)))return `Enter a quantity for every price type row of ${nm}.`;
+    if(new Set(c.rows.map(r=>r.type)).size!==c.rows.length)return `Use each price type only once for ${nm}.`;
+    if(sum(c.rows)!==+c.qty)return `Price type quantities for ${nm} must add up to ${c.qty} MT.`;}
+  return '';
 }
 function planCart(){
   const err=validateCart();UI.cartErr=err;if(err){render();return}
-  const now=new Date().toISOString();const ids=[];
-  S.cart.forEach(c=>{const id='MOG1000'+(S.seq++);ids.push(id);
-    S.pos.push({id,pid:c.pid,variant:c.variant,mou:c.mou,qty:+c.qty,month:c.month,rows:c.rows.map(r=>({qty:+r.qty,type:r.type,month:r.month})),status:'created',created:now,delivered:0,history:[{at:now,by:'Customer',action:'Created'}]});
-    notify('asm',`New planned order ${id} from ${ROLES.customer.sub} is awaiting your approval.`)});
-  S.cart=[];save();UI.flash={};ids.forEach(i=>UI.flash[i]=1);UI.otab='po';UI.search='';UI.product='';
-  go('orders');toast('Planned Order created Successfully');
+  busy('Creating planned order…',()=>{
+    const now=new Date().toISOString(),ids=[];
+    S.cart.forEach(c=>{const id='MOG1000'+(S.seq++);ids.push(id);
+      S.pos.push({id,pid:c.pid,variant:c.variant,mou:c.mou,qty:+c.qty,month:c.month,rows:c.rows.map(r=>({qty:+r.qty,type:r.type,month:r.month})),status:'created',created:now,delivered:0,history:[{at:now,by:'Customer',action:'Created'}]});
+      notify('asm',`New planned order ${id} from ${ROLES.customer.sub} is waiting for your approval.`,id)});
+    S.cart=[];save();UI.flash={};ids.forEach(i=>UI.flash[i]=1);UI.stat='';UI.search='';UI.product='';UI.route='po';render();window.scrollTo({top:0});
+    toast(ids.length>1?`${ids.length} planned orders created and sent to the ASM`:`Planned order ${ids[0]} created and sent to the ASM`);
+  });
 }
 function decide(){
-  const m=UI.modal;const po=S.pos.find(p=>p.id===m.id);const now=new Date().toISOString();const remark=(m.remark||'').trim();const who=S.user==='asm'?'ASM':'RM';
-  if(m.kind==='reject'){if(!remark){m.err='Add a remark so the customer knows why the order was rejected.';render();return}
-    po.status='rejected';po.history.push({at:now,by:who,action:'Rejected',remark});notify('customer',`${po.id} was rejected by ${who}: ${remark}`);
-    UI.modal=null;save();toast(`${po.id} rejected`);return}
-  if(S.user==='asm'){po.status='asm';po.history.push({at:now,by:'ASM',action:'Approved',remark});
-    notify('rm',`${po.id} approved by ASM and awaiting your final approval.`);notify('customer',`${po.id} approved by ASM and sent to RM.`);
-    UI.modal=null;save();toast(`${po.id} approved and sent to RM for final approval`);return}
-  po.status='approved';po.history.push({at:now,by:'RM',action:'Approved',remark});
-  UI.newBk={};
-  po.rows.forEach((r,i)=>{const t=String(1791500000000+Math.floor(Math.random()*90000000)+i);
-    S.bookings.push({dealId:po.id,ptype:P(po.pid).type,ticket:t,apdt:'',type:r.type,qty:+r.qty,bal:+r.qty,month:toBk(r.month),created:now});UI.newBk[t]=1});
-  notify('customer',`${po.id} is approved. You can now create a delivery.`);
-  UI.modal=null;save();UI.bkMonth=toBk(po.rows[0].month);
-  toast(`${po.id} approved. ${po.rows.length} price booking ${po.rows.length>1?'entries':'entry'} created`);
+  const m=UI.modal,po=S.pos.find(p=>p.id===m.id),remark=(m.remark||'').trim(),who=S.user==='asm'?'ASM':'RM';
+  if(m.kind==='reject'&&!remark){m.err='Add a remark so the customer knows why the order was rejected.';render();return}
+  const label=m.kind==='reject'?'Rejecting order…':S.user==='rm'?'Approving and creating price bookings…':'Approving order…';
+  UI.modal=null;
+  busy(label,()=>{
+    const now=new Date().toISOString();UI.flash={};UI.flash[po.id]=1;
+    if(m.kind==='reject'){po.status='rejected';po.history.push({at:now,by:who,action:'Rejected',remark});notify('customer',`${po.id} was rejected by the ${who}: ${remark}`,po.id);save();render();toast(`${po.id} rejected. The customer has been notified.`,'info');return}
+    if(S.user==='asm'){po.status='asm';po.history.push({at:now,by:'ASM',action:'Approved',remark});notify('rm',`${po.id} was approved by the ASM and is waiting for your final approval.`,po.id);notify('customer',`${po.id} was approved by the ASM and sent to the RM.`,po.id);save();render();toast(`${po.id} approved and sent to the RM`);return}
+    po.status='approved';po.history.push({at:now,by:'RM',action:'Approved',remark});UI.newBk={};
+    po.rows.forEach((r,i)=>{const t=String(1791500000000+Math.floor(Math.random()*90000000)+i);S.bookings.push({dealId:po.id,ptype:P(po.pid).type,ticket:t,apdt:'',type:r.type,qty:+r.qty,bal:+r.qty,month:toBk(r.month),created:now});UI.newBk[t]=1});
+    notify('customer',`${po.id} is approved. You can now create a delivery.`,po.id);UI.bkMonth=toBk(po.rows[0].month);save();render();
+    toast(`${po.id} approved. ${po.rows.length} price booking ${po.rows.length>1?'entries':'entry'} created.`);
+  });
 }
 function saveEdit(){
   const m=UI.modal,d=m.draft,po=S.pos.find(p=>p.id===m.id);
-  if(!(+d.qty>0)){m.err='Enter a quantity of at least 1 MT.';render();return}
-  if(d.rows.some(r=>!r.type||!(+r.qty>0))){m.err='Every price type row needs a type and a quantity.';render();return}
-  if(new Set(d.rows.map(r=>r.type)).size!==d.rows.length){m.err='Each price type can be used once.';render();return}
-  if(sum(d.rows)!==+d.qty){m.err=`Price type quantities must add up to ${d.qty} MT.`;render();return}
-  const changes=[];if(+d.qty!==po.qty)changes.push(`qty ${po.qty} → ${d.qty} MT`);if(d.month!==po.month)changes.push(`delivery ${po.month} → ${d.month}`);
-  if(JSON.stringify(d.rows)!==JSON.stringify(po.rows))changes.push(`price types: ${priceTypeText(d.rows)}`);
-  po.qty=+d.qty;po.month=d.month;po.rows=d.rows.map(r=>({qty:+r.qty,type:r.type,month:r.month}));
-  if(changes.length){po.history.push({at:new Date().toISOString(),by:'ASM',action:'Edited',remark:changes.join('; ')});notify('customer',`${po.id} was edited by ASM: ${changes.join('; ')}`)}
-  save();UI.modal={kind:'view',id:po.id};toast(changes.length?`${po.id} updated`:'No changes made');
+  const fail=t=>{m.err=t;render()};
+  if(!(+d.qty>0))return fail('Enter a quantity of at least 1 MT.');
+  if(d.rows.some(r=>!r.type||!(+r.qty>0)))return fail('Every price type row needs a type and a quantity.');
+  if(new Set(d.rows.map(r=>r.type)).size!==d.rows.length)return fail('Use each price type only once.');
+  if(sum(d.rows)!==+d.qty)return fail(`Price type quantities must add up to ${d.qty} MT.`);
+  const ch=[];if(+d.qty!==po.qty)ch.push(`quantity ${po.qty} → ${d.qty} MT`);if(d.month!==po.month)ch.push(`delivery ${po.month} → ${d.month}`);
+  const nr=d.rows.map(r=>({qty:+r.qty,type:r.type,month:r.month}));if(JSON.stringify(nr)!==JSON.stringify(po.rows))ch.push(`price types: ${nr.map(r=>`${r.type} ${r.qty}`).join(', ')}`);
+  po.qty=+d.qty;po.month=d.month;po.rows=nr;
+  if(ch.length){po.history.push({at:new Date().toISOString(),by:'ASM',action:'Edited',remark:ch.join('; ')});notify('customer',`${po.id} was edited by the ASM: ${ch.join('; ')}`,po.id)}
+  save();UI.modal=null;UI.drawer=po.id;render();toast(ch.length?`${po.id} updated`:'No changes to save','info');
 }
-function updateCartSummary(i){
-  const c=S.cart[i];const el=document.getElementById('mis'+i);
-  if(el)el.textContent=sum(c.rows)!==+c.qty?`Price type quantities add up to ${sum(c.rows)} MT. They must equal the order quantity of ${c.qty} MT.`:'';
+function liveCart(i){
+  const c=S.cart[i],el=document.getElementById('al'+i);if(el)el.outerHTML=allocHTML(c,i);
   const a=document.getElementById('sPhys'),b=document.getElementById('sPrice');
-  if(a)a.textContent=S.cart.reduce((x,c)=>x+(+c.qty||0),0)+' MT';
-  if(b)b.textContent=S.cart.reduce((x,c)=>x+sum(c.rows),0)+' MT';
+  if(a)a.textContent=n0(S.cart.reduce((x,c)=>x+(+c.qty||0),0))+' MT';
+  if(b)b.textContent=n0(S.cart.reduce((x,c)=>x+sum(c.rows),0))+' MT';
 }
 
 document.addEventListener('click',e=>{
   const t=e.target.closest('[data-a]');
   if(!t){if(UI.menu){UI.menu=null;render()}return}
-  const a=t.dataset.a,ds=t.dataset;
-  if(a==='scrim'){if(e.target===t){UI.modal=null;render()}return}
-  if(a!=='menu')UI.menu=null;
+  const a=t.dataset.a,ds=t.dataset;if(a!=='bell')UI.menu=null;
   switch(a){
-    case 'fill':{const r=ROLES[ds.role];UI.loginEmail=r.email;render();document.getElementById('email').value=r.email;document.getElementById('pwd').value=PASSWORD;break}
+    case 'quick':login(ds.role);break;
     case 'switch':login(ds.role);break;
-    case 'logout':S.user=null;save();UI.modal=null;UI.loginEmail='';go('login');break;
-    case 'reset':{const u=S.user;S=seed();S.user=u;save();UI.flash={};UI.newBk={};go(ROLES[u].home);toast('Demo data reset');break}
-    case 'menu':UI.menu=UI.menu===ds.m?null:ds.m;if(ds.m==='bell'&&UI.menu){setTimeout(()=>{S.notes.forEach(n=>{if(n.to===S.user)n.read=true});save()},0)}render();break;
-    case 'toast':toast(ds.msg);break;
-    case 'nav':if(ds.to==='orders')UI.otab='po';if(ds.to==='cart')UI.cartErr='';go(ds.to);break;
-    case 'buy':{const p=P(ds.id);UI.pdp={pid:p.id,tab:'mou',mou:MOUS[0],variant:p.variants[0],qty:1,month:MONTHS[0],open:{spec:true}};go('pdp');break}
+    case 'logout':UI.loadingSolid=true;go('login',()=>{S.user=null;UI.drawer=null;UI.modal=null;UI.loginEmail='';save()});break;
+    case 'reset':{const u=S.user;go(ROLES[u].home,()=>{S=seed();S.user=u;UI.flash={};UI.newBk={};UI.stat=defaultStat(u);save()},'Resetting demo…');setTimeout(()=>toast('Demo data reset','info'),600);break}
+    case 'bell':UI.menu=UI.menu==='bell'?null:'bell';render();if(UI.menu){S.notes.forEach(n=>{if(n.to===S.user)n.read=true});save()}break;
+    case 'side':UI.side=!UI.side;render();break;
+    case 'toast':render();toast(ds.msg,ds.tone);break;
+    case 'nav':{const to=ds.to;if(to===UI.route&&!UI.side){render();break}go(to,()=>{UI.cartErr='';if(to==='po'&&S.user==='customer')UI.stat='';});break}
+    case 'catf':UI.catFilter=ds.k;render();break;
+    case 'buy':{const p=P(ds.id);go('pdp',()=>{UI.pdp={pid:p.id,tab:'mou',mou:MOUS[0],variant:p.variants[0],qty:1,month:MONTHS[0],spec:'spec'}});break}
     case 'pdptab':UI.pdp.tab=ds.k;render();break;
-    case 'acc':UI.pdp.open[ds.k]=!UI.pdp.open[ds.k];render();break;
+    case 'spect':UI.pdp.spec=ds.k;render();break;
     case 'pqty':UI.pdp.qty=Math.max(1,(+UI.pdp.qty||0)+(+ds.d));render();break;
-    case 'addcart':addToCart();render();toast('Product added to cart');break;
-    case 'planpdp':addToCart();UI.cartErr='';go('cart');toast('cart has been created successfully');break;
-    case 'cqty':{const c=S.cart[ds.i];const old=+c.qty;c.qty=Math.max(1,old+(+ds.d));if(c.rows.length===1)c.rows[0].qty=c.qty;save();render();break}
-    case 'cdel':S.cart.splice(+ds.i,1);UI.cartErr='';save();render();toast('Product removed from cart');break;
-    case 'radd':{const c=S.cart[ds.i];const used=c.rows.map(r=>r.type);const left=Math.max(0,c.qty-sum(c.rows));c.rows.push({qty:left,type:PRICE_TYPES.find(x=>!used.includes(x))||'',month:c.month});save();render();break}
+    case 'pmonth':UI.pdp.month=ds.m;render();break;
+    case 'addcart':addToCart();render();toast(`${P(UI.pdp.pid).name} added to cart`);break;
+    case 'planpdp':addToCart();go('cart',()=>{UI.cartErr=''});setTimeout(()=>toast('Cart has been created successfully'),600);break;
+    case 'cqty':{const c=S.cart[ds.i];c.qty=Math.max(1,(+c.qty||0)+(+ds.d));if(c.rows.length===1)c.rows[0].qty=c.qty;save();render();break}
+    case 'cmonth':{const c=S.cart[ds.i];c.month=ds.m;c.rows.forEach(r=>{if(!r._m)r.month=ds.m});save();render();break}
+    case 'cdel':{const nm=P(S.cart[ds.i].pid).name;S.cart.splice(+ds.i,1);UI.cartErr='';save();render();toast(`${nm} removed from cart`,'info');break}
+    case 'radd':{const c=S.cart[ds.i],used=c.rows.map(r=>r.type);c.rows.push({qty:Math.max(0,c.qty-sum(c.rows)),type:PRICE_TYPES.find(x=>!used.includes(x))||'',month:c.month});save();render();break}
     case 'rdel':S.cart[ds.i].rows.splice(+ds.j,1);save();render();break;
     case 'plancart':planCart();break;
-    case 'otab':UI.otab=ds.k;render();break;
-    case 'pricing':UI.pricing=ds.k;render();if(ds.k!=='LME')toast('INR pricing view shows the same orders in this prototype');break;
-    case 'queue':UI.queue=ds.k;render();break;
-    case 'apply':UI.search=document.getElementById('f-search').value.trim();UI.product=document.getElementById('f-prod').value;if(S.user!=='customer')UI.queue='all';render();break;
-    case 'clear':UI.search='';UI.product='';render();break;
-    case 'view':UI.modal={kind:'view',id:ds.id};render();break;
-    case 'approve':UI.modal={kind:'approve',id:ds.id,remark:''};render();break;
-    case 'reject':UI.modal={kind:'reject',id:ds.id,remark:''};render();break;
+    case 'pricing':UI.pricing=ds.k;render();if(ds.k!=='LME')toast('INR pricing shows the same orders in this prototype','info');break;
+    case 'stat':UI.stat=UI.stat===ds.k?'':ds.k;render();break;
+    case 'apply':UI.search=document.getElementById('f-search').value.trim();UI.product=document.getElementById('f-prod').value;render();break;
+    case 'clear':UI.search='';UI.product='';UI.stat='';render();break;
+    case 'view':UI.drawer=ds.id;render();break;
+    case 'dclose':UI.drawer=null;render();break;
+    case 'approve':UI.modal={kind:'approve',id:ds.id,remark:''};render();setTimeout(()=>{const x=document.getElementById('remark');if(x)x.focus()},20);break;
+    case 'reject':UI.modal={kind:'reject',id:ds.id,remark:''};render();setTimeout(()=>{const x=document.getElementById('remark');if(x)x.focus()},20);break;
     case 'edit':{const po=S.pos.find(p=>p.id===ds.id);UI.modal={kind:'edit',id:ds.id,draft:{qty:po.qty,month:po.month,rows:po.rows.map(r=>({...r}))}};render();break}
     case 'mclose':UI.modal=null;render();break;
     case 'mconfirm':decide();break;
-    case 'eradd':{const d=UI.modal.draft;const used=d.rows.map(r=>r.type);d.rows.push({qty:Math.max(0,d.qty-sum(d.rows)),type:PRICE_TYPES.find(x=>!used.includes(x))||'',month:d.month});UI.modal.err='';render();break}
+    case 'eradd':{const d=UI.modal.draft,used=d.rows.map(r=>r.type);d.rows.push({qty:Math.max(0,d.qty-sum(d.rows)),type:PRICE_TYPES.find(x=>!used.includes(x))||'',month:d.month});UI.modal.err='';render();break}
     case 'erdel':UI.modal.draft.rows.splice(+ds.j,1);UI.modal.err='';render();break;
     case 'esave':saveEdit();break;
     case 'bkm':{const ms=[...new Set([...S.bookings.map(b=>b.month),...MONTHS.map(toBk)])].sort((a,b)=>bkKey(a)-bkKey(b));const i=ms.indexOf(UI.bkMonth)+(+ds.d);if(ms[i])UI.bkMonth=ms[i];render();break}
@@ -805,36 +960,36 @@ document.addEventListener('click',e=>{
     case 'bkx':UI.expanded[ds.k]=!UI.expanded[ds.k];render();break;
   }
 });
-
 document.addEventListener('submit',e=>{
   const f=e.target.dataset.form;if(!f)return;e.preventDefault();
   if(f==='login'){
     const email=document.getElementById('email').value.trim().toLowerCase(),pwd=document.getElementById('pwd').value;UI.loginEmail=email;
     const role=Object.keys(ROLES).find(k=>ROLES[k].email===email);
     if(!email||!pwd){UI.loginErr='Enter your email address and password.';render();return}
-    if(!role||pwd!==PASSWORD){UI.loginErr=`Email or password is incorrect. Use one of the prototype logins below (password ${PASSWORD}).`;render();return}
+    if(!role||pwd!==PASSWORD){UI.loginErr=`That email and password don't match. Use a prototype login below, or password ${PASSWORD}.`;render();return}
     login(role);
   }
-  if(f==='search'){const q=document.getElementById('gsearch').value.trim();UI.search=q;UI.otab='po';if(S.user!=='customer')UI.queue='all';go('orders')}
+  if(f==='search'){const q=document.getElementById('gsearch').value.trim();go('po',()=>{UI.search=q;UI.stat='';UI.product=''})}
 });
-
 document.addEventListener('change',e=>{
   const t=e.target,ds=t.dataset;
   if(ds.pdp){UI.pdp[ds.pdp]=ds.pdp==='qty'?Math.max(1,+t.value||1):t.value;render();return}
-  if(ds.cart){const c=S.cart[ds.i];if(ds.cart==='qty'){c.qty=Math.max(1,+t.value||1);if(c.rows.length===1)c.rows[0].qty=c.qty}else{c.month=t.value;c.rows.forEach(r=>{if(!r._m)r.month=t.value})}UI.cartErr='';save();render();return}
+  if(ds.cart==='qty'){const c=S.cart[ds.i];c.qty=Math.max(1,+t.value||1);if(c.rows.length===1)c.rows[0].qty=c.qty;UI.cartErr='';save();render();return}
   if(ds.row){const r=S.cart[ds.i].rows[ds.j];r[ds.row]=ds.row==='qty'?Math.max(0,+t.value||0):t.value;if(ds.row==='month')r._m=1;UI.cartErr='';save();render();return}
   if(ds.edit){const d=UI.modal.draft;d[ds.edit]=ds.edit==='qty'?Math.max(1,+t.value||1):t.value;if(ds.edit==='qty'&&d.rows.length===1)d.rows[0].qty=d.qty;UI.modal.err='';render();return}
   if(ds.erow){const r=UI.modal.draft.rows[ds.j];r[ds.erow]=ds.erow==='qty'?Math.max(0,+t.value||0):t.value;UI.modal.err='';render();return}
 });
 document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
-  if('remark' in ds&&UI.modal){UI.modal.remark=t.value;if(UI.modal.err&&t.value.trim()){UI.modal.err='';}return}
-  if(ds.cart==='qty'){const c=S.cart[ds.i];c.qty=+t.value||0;updateCartSummary(+ds.i);return}
-  if(ds.row==='qty'){S.cart[ds.i].rows[ds.j].qty=+t.value||0;updateCartSummary(+ds.i);return}
+  if('remark' in ds&&UI.modal){UI.modal.remark=t.value;return}
+  if(ds.cart==='qty'){S.cart[ds.i].qty=+t.value||0;liveCart(+ds.i);return}
+  if(ds.row==='qty'){S.cart[ds.i].rows[ds.j].qty=+t.value||0;liveCart(+ds.i);return}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(UI.modal||UI.menu)){UI.modal=null;UI.menu=null;render()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&(UI.modal||UI.drawer||UI.menu||UI.side)){if(UI.modal)UI.modal=null;else if(UI.drawer)UI.drawer=null;UI.menu=null;UI.side=false;render()}});
 
-render();
+/* first paint uses the solid loader, like Product KYC */
+UI.loading=true;UI.loadingSolid=true;render();
+setTimeout(()=>{UI.loading=false;UI.loadingSolid=false;render()},550);
 })();
 </script>
 
