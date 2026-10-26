@@ -233,6 +233,25 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .market{display:none}
 }
 
+
+/* quantity field */
+.qty{display:flex;align-items:center;gap:6px;height:56px;padding:0 6px 0 18px;border:1.5px solid var(--line);border-radius:var(--r);background:#fff;transition:border-color .18s,box-shadow .18s;max-width:100%}
+.qty:hover{border-color:#CDD5E0}
+.qty:focus-within{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-50)}
+.qty input{flex:1;min-width:0;width:100%;height:100%;border:0;background:none;font-size:22px;font-weight:800;letter-spacing:-.02em;-moz-appearance:textfield}
+.qty input::-webkit-outer-spin-button,.qty input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.qty input:focus{outline:none}
+.qty-u{font-weight:700;color:var(--ink-3);font-size:14px;padding-right:8px}
+.qty-b{display:flex;gap:4px;padding-left:8px;border-left:1.5px solid var(--line);height:40px;align-items:center}
+.qty-b button{width:40px;height:40px;border-radius:10px;border:0;background:var(--tile);color:var(--ink);display:grid;place-items:center;transition:background .18s,color .18s,transform .15s var(--ease)}
+.qty-b button:hover{background:var(--blue-50);color:var(--blue)}
+.qty-b button:active{transform:scale(.9)}
+.quick{display:flex;gap:6px;flex-wrap:wrap}
+.quick button{height:32px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:12.5px;font-weight:700;color:var(--ink-2);transition:all .18s}
+.quick button::after{content:" MT";font-weight:500;color:var(--ink-3)}
+.quick button:hover{border-color:var(--blue);color:var(--blue)}
+.quick button[aria-pressed="true"]{background:var(--blue-50);border-color:var(--blue);color:var(--blue)}
+.ci-ctrls .qty{width:260px}
 /* ---------- catalog ---------- */
 .hero{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(120deg,var(--blue) 0%,#0B6FBF 48%,#3E9A5B 100%);color:#fff;padding:36px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:24px;align-items:center;min-height:240px}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.22),transparent 40%),radial-gradient(rgba(255,255,255,.12) 1px,transparent 1px);background-size:auto,20px 20px}
@@ -596,6 +615,7 @@ const I={
   algo:sv('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/>',20),
   star:sv('<circle cx="12" cy="12" r="9"/><path d="m12 7.5 1.4 2.9 3.1.4-2.3 2.2.6 3.1L12 14.6 9.2 16.1l.6-3.1-2.3-2.2 3.1-.4z"/>',20),
   support:sv('<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>',20),
+  minus:sv('<path d="M5 12h14"/>',18),
   user:sv('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',16)
 };
 const brand=()=>`<div class="brand"><img src="${LOGO}" alt=""><div><b>vedanta</b><span>Metalbazaar</span></div></div>`;
@@ -645,7 +665,7 @@ function shell(content){
   const vocKids=leaf('','Feedback',soon('Feedback is outside this prototype'))+leaf('','Complaints',soon('Complaints are outside this prototype'));
   const side=`<aside class="sb${UI.mini?' mini':''}${UI.side?' open':''}" aria-label="Main menu">
     ${leaf(I.home,'Home',`data-a="nav" data-to="${ROLES[u].home}" ${cur(ROLES[u].home)||(cust&&r==='pdp')?'aria-current="page"':''}`)}
-    ${group('manage',I.manage,'Manage',manageKids,['cart','po','pb'].includes(r))}
+    ${group('manage',I.manage,'Procurement',manageKids,['cart','po','pb'].includes(r))}
     ${group('voc',I.voc,'Voice of Customer',vocKids,false)}
     ${leaf(I.rfq,'Request For Quotation',soon('Request For Quotation is outside this prototype'))}
     ${leaf(I.algo,'Algo Tool',soon('Algo Tool is outside this prototype'))}
@@ -686,7 +706,7 @@ function viewCatalog(){
 
 /* ---------- PDP ---------- */
 function viewPDP(){
-  const d=UI.pdp,p=P(d.pid),mou=d.tab==='mou';
+  const d=UI.pdp,p=P(d.pid),mou=true;
   const specs=[['Product description',d.variant],['Code',p.code||'—'],...(p.spec||[])];
   return `<button class="back s" style="--i:0" data-a="nav" data-to="catalog">${I.back}All products</button>
   <div class="pdp">
@@ -694,13 +714,14 @@ function viewPDP(){
       <div class="card specs"><div class="eyebrow" style="padding-top:14px">Specification</div>${specs.map(([a,b])=>`<div class="row"><span>${esc(a)}</span><b>${esc(b)}</b></div>`).join('')}${p.spec?'':'<div class="row"><span>Dimensions & weight</span><b class="muted">[Add from spec sheet]</b></div>'}</div></div>
     <div class="card panel s" style="--i:2">
       <div><h1>${esc(p.name)}</h1><p class="muted" style="margin-top:6px">${esc(p.full)}</p></div>
-      <div class="seg" role="group" aria-label="Buying method">${[['mou','Buy under MoU'],['spot','Spot price'],['lp','List price']].map(([k,t])=>`<button aria-pressed="${d.tab===k}" data-a="ptab" data-k="${k}">${t}</button>`).join('')}</div>
-      ${mou?'':`<div class="notice">${I.info}<span>Spot and list price buying are outside this prototype. Choose <b>Buy under MoU</b> to continue.</span></div>`}
       <div class="pair">
         <div class="field"><label for="pdp-mou">MoU number</label><select class="input" id="pdp-mou" data-pdp="mou" ${mou?'':'disabled'}>${opt(MOUS,d.mou)}</select></div>
         <div class="field"><label for="pdp-var">Variant</label><select class="input" id="pdp-var" data-pdp="variant">${opt(p.variants,d.variant)}</select></div>
       </div>
-      <div class="field"><label for="pdp-qty">Quantity</label><div class="stepper"><button aria-label="Decrease quantity" data-a="pq" data-d="-1">−</button><input id="pdp-qty" class="num" type="number" min="1" value="${d.qty}" data-pdp="qty"><button aria-label="Increase quantity" data-a="pq" data-d="1">+</button><span class="u">MT</span></div></div>
+      <div class="field"><label for="pdp-qty">Quantity</label><div class="qty">
+        <input id="pdp-qty" class="num" type="number" min="1" inputmode="numeric" value="${d.qty}" data-pdp="qty"><span class="qty-u">MT</span>
+        <div class="qty-b"><button type="button" aria-label="Decrease quantity" data-a="pq" data-d="-1">${I.minus}</button><button type="button" aria-label="Increase quantity" data-a="pq" data-d="1">${I.plus}</button></div></div>
+        <div class="quick" role="group" aria-label="Quick quantity">${[25,50,100,250,500].map(v=>`<button type="button" aria-pressed="${+d.qty===v}" data-a="pqset" data-v="${v}">${v}</button>`).join('')}</div></div>
       <div class="field"><span class="lbl">Delivery month</span><div class="months" role="group" aria-label="Delivery month">${MONTHS.map(m=>`<button aria-pressed="${d.month===m}" data-a="pm" data-m="${esc(m)}"><b>${mS(m)}</b><small>${mY(m)}</small></button>`).join('')}</div></div>
       <div class="total"><span class="muted" style="font-weight:600">Your order</span><b class="num">${n0(d.qty)} MT · ${mNice(d.month)}</b></div>
       <div class="pair"><button class="btn btn-ghost btn-lg" ${mou?'':'disabled'} data-a="addcart">${I.cart}Add to cart</button><button class="btn btn-primary btn-lg" ${mou?'':'disabled'} data-a="planpdp">Plan order ${I.arrow}</button></div>
@@ -725,7 +746,9 @@ function viewCart(){
     <div class="ci-top"><span class="thumb"><img src="${imgOf(c.pid,c.variant)}" alt=""></span><div style="flex:1;min-width:0"><h3>${esc(p.name)}</h3><div class="muted" style="font-size:13px">${esc(c.variant)} · <span class="mono">${esc(c.mou)}</span></div></div>
       <button class="icon-btn" aria-label="Remove ${esc(p.name)}" data-a="cdel" data-i="${i}">${I.trash}</button></div>
     <div class="ci-ctrls">
-      <div class="field"><label for="cq${i}">Quantity</label><div class="stepper"><button aria-label="Decrease" data-a="cq" data-i="${i}" data-d="-1">−</button><input id="cq${i}" class="num" type="number" min="1" value="${c.qty}" data-cart="qty" data-i="${i}"><button aria-label="Increase" data-a="cq" data-i="${i}" data-d="1">+</button><span class="u">MT</span></div></div>
+      <div class="field"><label for="cq${i}">Quantity</label><div class="qty">
+        <input id="cq${i}" class="num" type="number" min="1" inputmode="numeric" value="${c.qty}" data-cart="qty" data-i="${i}"><span class="qty-u">MT</span>
+        <div class="qty-b"><button type="button" aria-label="Decrease quantity" data-a="cq" data-i="${i}" data-d="-1">${I.minus}</button><button type="button" aria-label="Increase quantity" data-a="cq" data-i="${i}" data-d="1">${I.plus}</button></div></div></div>
       <div class="field"><span class="lbl">Delivery month</span><div class="mchips" role="group" aria-label="Delivery month">${MONTHS.map(m=>`<button class="mchip" aria-pressed="${c.month===m}" data-a="cm" data-i="${i}" data-m="${esc(m)}">${mNice(m)}</button>`).join('')}</div></div>
     </div>
     <div class="price"><div class="price-h"><h4>How should this be priced?</h4>${allocHTML(c,i)}</div>
@@ -739,7 +762,6 @@ function viewCart(){
   </div>
   <aside class="card sumc s" style="--i:2"><h3>Summary</h3>
     <div class="big"><div><span>Net physical</span><b class="num" id="sPhys">${n0(phys)}</b> <span style="display:inline">MT</span></div><div><span>Net pricing</span><b class="num" id="sPrice">${n0(price)}</b> <span style="display:inline">MT</span></div></div>
-    <div><div class="eyebrow" style="margin-bottom:10px">Approval route</div>${routeHTML()}</div>
     ${UI.cartErr?`<div class="notice bad" role="alert">${I.info}<span>${esc(UI.cartErr)}</span></div>`:''}
     <button class="btn btn-primary btn-lg btn-block" data-a="plancart">Plan order ${I.arrow}</button>
     <button class="btn btn-ghost btn-block" data-a="nav" data-to="catalog">Add another product</button>
@@ -841,7 +863,7 @@ function viewModal(){
     const d=m.draft,a=sum(d.rows),q=+d.qty||0,cls=a===q?'full':a>q?'over':'under';
     inner=`<div class="m-h"><div><h2>Edit order</h2><p><span class="mono">${po.id}</span> · ${esc(po.variant)}</p></div>${x}</div>
     <div class="m-b">
-      <div class="field"><label for="e-qty">Quantity</label><div class="stepper" style="align-self:flex-start"><input id="e-qty" class="num" type="number" min="1" value="${d.qty}" data-edit="qty"><span class="u">MT</span></div></div>
+      <div class="field"><label for="e-qty">Quantity</label><div class="qty" style="max-width:320px"><input id="e-qty" class="num" type="number" min="1" value="${d.qty}" data-edit="qty"><span class="qty-u">MT</span></div></div>
       <div class="field"><span class="lbl">Delivery month</span><div class="mchips">${(MONTHS.includes(d.month)?MONTHS:[d.month,...MONTHS]).map(mm=>`<button class="mchip" aria-pressed="${d.month===mm}" data-a="em" data-m="${esc(mm)}">${mNice(mm)}</button>`).join('')}</div></div>
       <div class="price"><div class="price-h"><h4>Price types</h4><div class="alloc ${cls}"><span class="track"><span class="fill" style="width:${q?Math.min(100,a/q*100):0}%"></span></span><span>${n0(a)} / ${n0(q)} MT</span></div></div>
         ${d.rows.map((r,j)=>`<div class="prow" style="animation:none">
@@ -861,8 +883,7 @@ function viewSuccess(){
     <svg class="tick" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46"/><path d="M30 52 l14 14 l27 -30"/></svg>
     <h2>${s.ids.length>1?`${s.ids.length} planned orders created`:'Planned order created'}</h2>
     <p><span class="mono" style="color:var(--ink)">${s.ids.join(', ')}</span> ${s.ids.length>1?'were':'was'} sent to the ASM for approval.</p>
-    ${routeHTML()}
-    <div class="pair"><button class="btn btn-ghost" data-a="sshop">Keep shopping</button><button class="btn btn-primary" data-a="sclose">View my orders</button></div>
+    <button class="btn btn-primary btn-lg btn-block" data-a="sclose">View my orders</button>
   </div></div>`;
 }
 
@@ -979,6 +1000,7 @@ document.addEventListener('click',e=>{
     case 'cat':UI.cat=ds.k;UI.anim=true;render();break;
     case 'buy':{const p=P(ds.id);go('pdp',()=>{UI.pdp={pid:p.id,tab:'mou',mou:MOUS[0],variant:p.variants[0],qty:1,month:MONTHS[0]}});break}
     case 'ptab':UI.pdp.tab=ds.k;render();break;
+    case 'pqset':UI.pdp.qty=+ds.v;render();break;
     case 'pq':UI.pdp.qty=Math.max(1,(+UI.pdp.qty||0)+(+ds.d));render();break;
     case 'pm':UI.pdp.month=ds.m;render();break;
     case 'addcart':{const nm=P(UI.pdp.pid).name;addToCart();t.disabled=true;flyToCart(()=>{UI.bump=true;render();toast(`${nm} added to cart`)});break}
