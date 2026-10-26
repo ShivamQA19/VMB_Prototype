@@ -311,7 +311,6 @@ function render() {
     <div class="brand"><img src="${LOGO}" alt=""><b>vedanta</b></div>
     <div class="search"><input type="text" placeholder="Search for DO, PO, Dispatch Details, etc" aria-label="Search"><button aria-label="Search" style="color:#fff">${sv(I.search, 20, 2.4)}</button></div>
     <div class="hide-sm" style="display:flex;flex-direction:column;gap:2px"><span style="font-size:13px">LME Aluminium:</span><b style="font-size:15px;color:#1565C0">$8,453.60</b></div>
-    <span class="proto-pill hide-sm">Prototype · demo data</span>
     <div style="flex:1 1 10px"></div>
     <div class="hide-sm" style="display:flex;flex-direction:column;gap:2px"><span style="font-size:12px;color:#3C4043">Market and Plant</span><span style="font-size:14px">Domestic - VEDANT… ▾</span></div>
     ${sv(I.bell, 26, 1.8)}
@@ -328,7 +327,6 @@ function render() {
         <button class="tab" data-act="soon">Ledger</button>
         <button class="tab on">Ledger Reconciliation</button>
         ${['CN/DN', 'LC', 'BG'].map((t) => `<button class="tab" data-act="soon">${t}</button>`).join('')}
-        <span class="proto-pill">UPDATED · REQ-01</span>
       </div>
 
       <section class="card filters">
