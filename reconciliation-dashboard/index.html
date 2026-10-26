@@ -11,6 +11,10 @@ body { font-family: 'Roboto', Arial, sans-serif; color: #1F1F1F; -webkit-font-sm
 button, input, select { font: inherit; }
 :focus-visible { outline: 2px solid #1565C0; outline-offset: 2px; }
 
+.viewbar { background: #0B2545; color: #fff; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 7px 20px; font-size: 13px; }
+.viewbar a { color: #fff; text-decoration: none; padding: 4px 12px; border-radius: 14px; border: 1px solid rgba(255,255,255,.35); }
+.viewbar a.on { background: #fff; color: #0B2545; font-weight: 700; border-color: #fff; }
+.viewbar a:not(.on):hover { background: rgba(255,255,255,.12); }
 .topbar { background: #fff; display: flex; align-items: center; flex-wrap: wrap; gap: 14px 26px; padding: 10px 20px; box-shadow: 0 1px 3px rgba(0,0,0,.08); position: relative; z-index: 6; }
 .iconbtn { border: 0; background: none; padding: 6px; cursor: pointer; display: flex; }
 .brand { display: flex; align-items: center; gap: 8px; }
@@ -301,6 +305,7 @@ function render() {
   const pages = Array.from({ length: nPages }, (_, i) => `<button class="pg${i === page ? ' on' : ''}" data-act="page" data-n="${i}">${i + 1}</button>`).join('');
 
   document.getElementById('app').innerHTML = `
+  <div class="viewbar"><span>Prototype view:</span><a class="on" href="./" aria-current="page">Supplier (HZL Console)</a><a href="../ledger-reconciliation-customer/">Customer</a></div>
   <header class="topbar">
     <button class="iconbtn" data-act="nav" aria-label="Toggle menu">${sv(I.menu, 24)}</button>
     <div class="brand"><img src="${LOGO}" alt=""><b>vedanta</b></div>
