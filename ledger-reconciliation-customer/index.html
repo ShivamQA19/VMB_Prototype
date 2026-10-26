@@ -89,15 +89,26 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 20px 60px; display: flex
 .lock { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #5F6368; }
 
 .backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.45); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 40; }
-.modal { background: #fff; border-radius: 8px; width: 100%; max-width: 520px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
-.modal header { padding: 16px 20px; border-bottom: 1px solid #ECEEF1; display: flex; align-items: center; justify-content: space-between; }
-.modal header h2 { margin: 0; font-size: 18px; }
-.modal .body { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; font-size: 14px; }
-.modal footer { padding: 14px 20px; border-top: 1px solid #ECEEF1; display: flex; justify-content: flex-end; gap: 10px; }
+.modal { background: #fff; border-radius: 6px; width: 100%; max-width: 560px; box-shadow: 0 20px 50px rgba(0,0,0,.3); }
+.modal header { padding: 24px 28px 4px; display: flex; align-items: center; justify-content: space-between; }
+.modal header h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.modal .body { padding: 8px 28px 4px; display: flex; flex-direction: column; gap: 14px; font-size: 15px; }
+.modal .intro { margin: 0; line-height: 1.5; color: #1F1F1F; }
+.modal footer { padding: 18px 28px 24px; display: flex; justify-content: flex-end; align-items: center; gap: 22px; }
+.modal label.t { font-weight: 700; font-size: 15px; }
+.modal textarea { border: 1px solid #1F1F1F !important; border-radius: 3px !important; min-height: 78px !important; }
+.upbox { border: 1px dashed #1565C0; border-radius: 3px; padding: 16px 40px; display: flex; flex-direction: column; gap: 6px; }
+.upbtn { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: 40px; padding: 0 10px; border: 1px solid #1565C0; border-radius: 3px; color: #1565C0; font-weight: 700; font-size: 15px; cursor: pointer; background: #fff; }
+label.upbtn { justify-content: flex-start; }
+.upname { display: inline-flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upx { border: 0; background: none; color: #D93025; cursor: pointer; padding: 4px; display: flex; }
+.sr { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.txtbtn { border: 0; background: none; font-weight: 700; font-size: 15px; cursor: pointer; padding: 8px 4px; color: #1F1F1F; }
+.uptoast { position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background: #F1FAF1; color: #1F1F1F; border: 1px solid #6EBE3C; border-radius: 4px; padding: 12px 18px; font-size: 14px; z-index: 70; box-shadow: 0 4px 14px rgba(0,0,0,.12); }
 .sumbox { background: #F5F6F8; border-radius: 6px; padding: 12px 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 16px; }
 .sumbox span { display: block; font-size: 12px; color: #5F6368; }
 .sumbox b { font-size: 15px; font-variant-numeric: tabular-nums; }
-.modal label.t { font-size: 13px; font-weight: 500; }
+.modal label.t { font-size: 15px; font-weight: 700; }
 .modal textarea { width: 100%; min-height: 90px; border: 1px solid #C9CDD3; border-radius: 4px; padding: 8px 10px; font-size: 14px; resize: vertical; }
 .modal textarea:focus, .modal input[type=file]:focus { outline: none; border-color: #1565C0; box-shadow: 0 0 0 3px rgba(21,101,192,.14); }
 .drop { border: 1px dashed #9AA0A6; border-radius: 6px; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
@@ -105,7 +116,7 @@ main { max-width: 1440px; margin: 0 auto; padding: 14px 20px 60px; display: flex
 .okfile { color: #1B5E20; font-size: 13px; }
 .chkline { display: flex; gap: 10px; align-items: flex-start; }
 .chkline input { width: 17px; height: 17px; margin: 2px 0 0; accent-color: #1565C0; flex: none; }
-.x { border: 0; background: none; cursor: pointer; padding: 4px; color: #5F6368; display: flex; }
+.x { border: 0; background: none; cursor: pointer; padding: 4px; color: #1F1F1F; display: flex; }
 
 .toast { position: fixed; right: 24px; bottom: 24px; background: #1F1F1F; color: #fff; font-size: 14px; padding: 12px 16px; border-radius: 4px; box-shadow: 0 6px 20px rgba(0,0,0,.25); z-index: 60; max-width: 420px; }
 @media (max-width: 720px) { .hide-sm { display: none; } .pager { margin-left: 0; } }
@@ -122,30 +133,32 @@ const TODAY = '26-Oct-2026';
    cust:   null | {act:'verified'|'disputed', at}    supplier: null | {at} */
 const CUSTOMER = { code: '777', name: 'MAHAVEER', email: '[registered email]' };
 const RECS = [
-  { id: 'hy1-26', dur: 'HY1 (Apr – Sep 2026)', asOn: '30-Sep-2026', ob: -1103228.16, cb: -1360368.16, verifyBy: '10-Nov-2026', status: 'Pending',
+  { id: 'hy1-26', durShort: 'Apr 2026-Sep 2026', dur: 'HY1 (Apr – Sep 2026)', asOn: '30-Sep-2026', ob: -1103228.16, cb: -1360368.16, verifyBy: '10-Nov-2026', status: 'Pending',
     uploaded: '', verifiedFile: '', remarks: [], cust: null, supplier: null },
-  { id: 'hy2-26', dur: 'HY2 (Oct 2025 – Mar 2026)', asOn: '31-Mar-2026', ob: -16802989.16, cb: -1103228.16, verifyBy: '10-Apr-2026', status: 'Verified',
+  { id: 'hy2-26', durShort: 'Oct 2025-Mar 2026', dur: 'HY2 (Oct 2025 – Mar 2026)', asOn: '31-Mar-2026', ob: -16802989.16, cb: -1103228.16, verifyBy: '10-Apr-2026', status: 'Verified',
     uploaded: 'BC_777_Mar2026_signed.pdf', verifiedFile: 'HZL_Verified_777_Mar2026.pdf', remarks: [['Customer', 'Balance confirmed as per our books', '04-Apr-2026']],
     cust: { act: 'verified', at: '04-Apr-2026 11:20' }, supplier: { at: '07-Apr-2026 16:05' } },
-  { id: 'hy1-25', dur: 'HY1 (Apr – Sep 2025)', asOn: '30-Sep-2025', ob: -9845120.40, cb: -16802989.16, verifyBy: '10-Oct-2025', status: 'Disputed',
+  { id: 'hy1-25', durShort: 'Apr 2025-Sep 2025', dur: 'HY1 (Apr – Sep 2025)', asOn: '30-Sep-2025', ob: -9845120.40, cb: -16802989.16, verifyBy: '10-Oct-2025', status: 'Disputed',
     uploaded: 'Dispute_777_Sep2025.pdf', verifiedFile: '', remarks: [['Customer', 'Payment of ₹ 4,50,000 on 28-Sep-2025 not credited', '08-Oct-2025'], ['HZL', 'Under review with collections team', '12-Oct-2025']],
     cust: { act: 'disputed', at: '08-Oct-2025 15:42' }, supplier: null },
-  { id: 'hy2-25', dur: 'HY2 (Oct 2024 – Mar 2025)', asOn: '31-Mar-2025', ob: -7210400.00, cb: -9845120.40, verifyBy: '10-Apr-2025', status: 'Verified',
+  { id: 'hy2-25', durShort: 'Oct 2024-Mar 2025', dur: 'HY2 (Oct 2024 – Mar 2025)', asOn: '31-Mar-2025', ob: -7210400.00, cb: -9845120.40, verifyBy: '10-Apr-2025', status: 'Verified',
     uploaded: 'BC_777_Mar2025_signed.pdf', verifiedFile: 'HZL_Verified_777_Mar2025.pdf', remarks: [],
     cust: { act: 'verified', at: '03-Apr-2025 10:05' }, supplier: { at: '05-Apr-2025 12:30' } }
 ];
 const PILL = { 'Verified': 'p-verified', 'Pending': 'p-pending', 'Disputed': 'p-disputed', 'Exception Raised': 'p-exception' };
 const PER = 6;
+const TYPES = ['.csv', '.xlsx', '.txt', '.doc', '.docx', '.jpg', '.png', '.jpeg', '.pdf'];
+const ACCEPT = TYPES.join(',');
 
 const sv = (d, s = 16, w = 2.4) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
 const I = {
   dl: '<path d="M12 3v12M7 10l5 5 5-5M4 19h16"/>', plus: '<path d="M12 5v14M5 12h14"/>', minus: '<path d="M5 12h14"/>',
-  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  up: '<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
   bell: '<path d="M6 16V11a6 6 0 1112 0v5l2 2H4z"/><path d="M10 20a2 2 0 004 0"/>', info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/>'
 };
 
-const S = { durF: 'All', statusF: 'All', page: 0, open: { 'hy1-26': true }, modal: null, file: null, fileErr: '', text: '', agree: false, toast: '' };
-let toastTimer;
+const S = { durF: 'All', statusF: 'All', page: 0, open: { 'hy1-26': true }, modal: null, file: null, fileErr: '', text: '', toast: '', upToast: '' };
+let toastTimer, upTimer;
 const set = (p) => { Object.assign(S, p); render(); };
 const flash = (m) => { clearTimeout(toastTimer); set({ toast: m }); toastTimer = setTimeout(() => set({ toast: '' }), 3000); };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -208,36 +221,38 @@ function rowHtml(r) {
 function modalHtml() {
   if (!S.modal) return '';
   const r = byId(S.modal.id), m = S.modal.m;
-  const title = m === 'verify' ? 'Verify Ledger Balance' : m === 'dispute' ? 'Raise Dispute' : 'Add Remark';
-  const summary = `<div class="sumbox"><div><span>Duration</span><b>${r.dur}</b></div><div><span>Balance as on ${r.asOn}</span><b>${inr(r.cb)}</b></div></div>`;
-  const upload = (req) => `<div class="drop">
-      <label class="t" for="fup">${m === 'verify' ? 'Signed Balance Confirmation' : 'Supporting document (your ledger / reconciliation)'} ${req ? '<span class="err">*</span>' : '<span class="muted">(optional)</span>'}</label>
-      <input id="fup" type="file" accept="application/pdf,.pdf">
-      <span class="muted small">PDF only, up to 5 MB</span>
-      ${S.file ? `<span class="okfile">✓ ${esc(S.file)}</span>` : ''}${S.fileErr ? `<span class="err">${S.fileErr}</span>` : ''}
+  const upload = `<div class="upbox">
+      ${S.file
+        ? `<div class="upbtn up-has"><span class="upname">${sv(I.up, 16, 2.4)}${esc(S.file)}</span><button class="upx" data-act="rmfile" aria-label="Remove file">${sv(I.x, 14, 2.6)}</button></div>`
+        : `<label class="upbtn" for="fup">${sv(I.up, 16, 2.4)}Upload File*</label>`}
+      <input id="fup" type="file" accept="${ACCEPT}" class="sr">
+      <span class="small">(*File Type ${TYPES.join(', ')})</span>
+      ${S.fileErr ? `<span class="err">${S.fileErr}</span>` : ''}
     </div>`;
-  let body, ok, okCls = 'btnP', okOn;
+  const remarks = `<div class="stack"><label class="t" for="txt">Remarks</label>
+      <textarea id="txt" placeholder="Enter your remarks if any...">${esc(S.text)}</textarea></div>`;
+  let title, intro, ok;
   if (m === 'verify') {
-    body = `${summary}${upload(false)}
-      <label class="chkline"><input type="checkbox" id="agree"${S.agree ? ' checked' : ''}><span>I confirm that the closing balance of <b>${inr(r.cb)}</b> as on ${r.asOn} matches our books of account.</span></label>
-      <span class="muted small">Once verified, this period is locked and sent to HZL for verification.</span>`;
-    ok = 'Verify'; okOn = S.agree;
+    title = 'Verify Confirmation';
+    intro = `I have duly verified the ledger and it is correct in all aspects. I confirm that no discrepancy will be raised from ${r.durShort}`;
+    ok = 'Verify';
   } else if (m === 'dispute') {
-    body = `${summary}
-      <div class="stack"><label class="t" for="txt">Reason for dispute <span class="err">*</span></label>
-      <textarea id="txt" placeholder="e.g. Payment of ₹ 2,00,000 on 15-Sep-2026 not reflected">${esc(S.text)}</textarea></div>
-      ${upload(true)}
-      <span class="muted small">HZL will review the dispute. This period is locked for further changes from your side.</span>`;
-    ok = 'Raise Dispute'; okCls = 'btnP btnR'; okOn = S.text.trim().length > 0 && !!S.file;
+    title = 'Raise Dispute';
+    intro = 'You can upload a CSV file and remark on Financial Ledger Discrepancies and Auditing Issues.';
+    ok = 'Raise Dispute';
   } else {
-    body = `<div class="stack"><label class="t" for="txt">Remark <span class="err">*</span></label>
-      <textarea id="txt" placeholder="Add a remark for HZL">${esc(S.text)}</textarea></div>`;
-    ok = 'Add Remark'; okOn = S.text.trim().length > 0;
+    title = 'Add Remark';
+    intro = `Add a remark for HZL on ${r.durShort}.`;
+    ok = 'Add Remark';
   }
+  const body = m === 'remark'
+    ? `<p class="intro">${intro}</p><div class="stack"><label class="t" for="txt">Remarks</label><textarea id="txt" placeholder="Enter your remarks...">${esc(S.text)}</textarea></div>`
+    : `<p class="intro">${intro}</p>${remarks}${upload}`;
+  const okOn = m === 'remark' ? S.text.trim().length > 0 : !!S.file;
   return `<div class="backdrop" data-act="close-bg"><div class="modal" role="dialog" aria-modal="true" aria-labelledby="mt">
-    <header><h2 id="mt">${title}</h2><button class="x" data-act="close" aria-label="Close">${sv(I.x, 18, 2.4)}</button></header>
+    <header><h2 id="mt">${title}</h2><button class="x" data-act="close" aria-label="Close">${sv(I.x, 20, 3)}</button></header>
     <div class="body">${body}</div>
-    <footer><button class="btnO" data-act="close">Cancel</button><button class="${okCls}" data-act="submit"${okOn ? '' : ' disabled'}>${ok}</button></footer>
+    <footer><button class="txtbtn" data-act="close">Cancel</button><button class="btnP" data-act="submit"${okOn ? '' : ' disabled'}>${ok}</button></footer>
   </div></div>`;
 }
 
@@ -289,7 +304,8 @@ function render() {
     ${list.length ? list.slice(page * PER, page * PER + PER).map(rowHtml).join('') : '<section class="card" style="padding:36px 18px;color:#5F6368">No records match the selected filters.</section>'}
   </main>
   ${modalHtml()}
-  ${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
+  ${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}
+  ${S.upToast ? `<div class="uptoast" role="status">${esc(S.upToast)}</div>` : ''}`;
 
   if (active) { const t = document.getElementById('txt'); if (t) { t.focus(); t.setSelectionRange(caret, caret); } }
 }
@@ -304,17 +320,18 @@ document.addEventListener('click', (e) => {
     case 'row': { const o = Object.assign({}, S.open); o[el.dataset.id] = !o[el.dataset.id]; set({ open: o }); break; }
     case 'page': set({ page: +el.dataset.n }); break;
     case 'toast': flash(el.dataset.msg); break;
-    case 'open': set({ modal: { m: el.dataset.m, id: el.dataset.id }, file: null, fileErr: '', text: '', agree: false }); break;
+    case 'open': set({ modal: { m: el.dataset.m, id: el.dataset.id }, file: null, fileErr: '', text: '' }); break;
+    case 'rmfile': set({ file: null, fileErr: '' }); break;
     case 'close': case 'close-bg': set({ modal: null }); break;
     case 'submit': {
       const r = byId(S.modal.id), m = S.modal.m, at = now();
       if (m === 'verify') {
-        r.cust = { act: 'verified', at }; r.status = 'Pending'; if (S.file) r.uploaded = S.file;
-        r.remarks.push(['Customer', 'Balance verified', TODAY]);
+        r.cust = { act: 'verified', at }; r.status = 'Pending'; r.uploaded = S.file;
+        r.remarks.push(['Customer', S.text.trim() || 'Ledger verified', TODAY]);
         set({ modal: null }); flash('Thank you. Your confirmation is recorded and sent to HZL for verification.');
       } else if (m === 'dispute') {
         r.cust = { act: 'disputed', at }; r.status = 'Disputed'; r.uploaded = S.file;
-        r.remarks.push(['Customer', S.text.trim(), TODAY]);
+        r.remarks.push(['Customer', S.text.trim() || 'Dispute raised – see uploaded file', TODAY]);
         set({ modal: null }); flash('Dispute raised. HZL will review it and respond here.');
       } else {
         r.remarks.push(['Customer', S.text.trim(), TODAY]);
@@ -327,14 +344,16 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   const el = e.target;
   if (el.dataset.f) { set({ [el.dataset.f]: el.value, page: 0 }); return; }
-  if (el.id === 'agree') { set({ agree: el.checked }); return; }
   if (el.id === 'fup') {
     const f = el.files && el.files[0];
     if (!f) return;
-    const isPdf = /\.pdf$/i.test(f.name) && (!f.type || f.type === 'application/pdf');
-    if (!isPdf) set({ file: null, fileErr: 'Only PDF files are allowed.' });
+    const ext = (f.name.match(/\.[^.]+$/) || [''])[0].toLowerCase();
+    if (!TYPES.includes(ext)) set({ file: null, fileErr: 'File type not allowed. Use ' + TYPES.join(', ') });
     else if (f.size > 5 * 1024 * 1024) set({ file: null, fileErr: 'File is larger than 5 MB.' });
-    else set({ file: f.name, fileErr: '' });
+    else {
+      clearTimeout(upTimer); set({ file: f.name, fileErr: '', upToast: f.name + ' has been uploaded successfully.' });
+      upTimer = setTimeout(() => set({ upToast: '' }), 2600);
+    }
   }
 });
 document.addEventListener('input', (e) => { if (e.target.id === 'txt') set({ text: e.target.value }); });
