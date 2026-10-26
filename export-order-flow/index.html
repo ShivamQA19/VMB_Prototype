@@ -268,6 +268,40 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .pg button[aria-current="page"]{background:var(--blue);border-color:var(--blue);color:#fff}
 .pg button[disabled]{color:#B4BDC9;cursor:default}
 @media (max-width:760px){.fgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.fgrid .field:nth-child(n+3){grid-column:1/-1}.factions{width:100%}.factions .btn{flex:1}}
+
+/* book price */
+.req{color:var(--red)}
+.bk-extra{display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:var(--r);background:var(--bg);animation:pop .3s var(--ease) both}
+.fake-in{position:relative}.fake-in svg,.fake-in .cur{position:absolute;left:14px;top:14px;color:var(--ink-3);font-weight:700}.fake-in .input{padding-left:40px}
+.fake-in .input[readonly]{background:#fff;color:var(--ink);font-weight:600}
+.range-btn{display:flex;align-items:center;gap:10px;text-align:left;cursor:pointer;font-weight:600}
+.range-btn svg{color:var(--ink-3)}.range-btn.on{border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-50)}
+.cal{position:absolute;left:0;top:76px;z-index:5;background:#fff;border:1px solid var(--line);border-radius:var(--r);box-shadow:0 24px 48px -20px rgba(15,27,45,.4);padding:12px;animation:pop .22s var(--ease) both;width:max-content;max-width:calc(100vw - 64px)}
+.cal-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.cms{display:flex;gap:18px;flex-wrap:wrap}
+.cm-h{text-align:center;font-weight:800;margin-bottom:6px}
+.cw,.cg{display:grid;grid-template-columns:repeat(7,36px);gap:2px}
+.cw span{font-size:11.5px;color:var(--ink-3);text-align:center;font-weight:600;padding:4px 0}
+.cg .d{height:36px;border:0;border-radius:10px;background:none;font-size:13px;font-weight:600;color:var(--ink);transition:background .15s}
+.cg .d:hover:not([disabled]){background:var(--blue-50);color:var(--blue)}
+.cg .d[disabled]{color:#C3CBD6;cursor:default}
+.cg .d.today{box-shadow:inset 0 0 0 1.5px var(--blue-100)}
+.cg .d.in{background:var(--blue-50);color:var(--blue);border-radius:0}
+.cg .d.edge{background:var(--blue);color:#fff}
+.live{display:flex;flex-direction:column;gap:4px;padding:16px;border-radius:var(--r-sm);background:#fff;border:1px solid var(--line)}
+.live>div{display:flex;align-items:center;gap:8px}
+.live b{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(108,179,63,.6);animation:livePulse 1.6s ease-out infinite}
+@keyframes livePulse{to{box-shadow:0 0 0 10px rgba(108,179,63,0)}}
+@keyframes tickUp{0%,40%{color:var(--ok)}100%{color:inherit}}
+@keyframes tickDown{0%,40%{color:var(--red)}100%{color:inherit}}
+[data-live]{border-radius:6px;padding:0 4px;margin:0 -4px}
+[data-live].up{animation:tickUp 1.2s ease-out}[data-live].down{animation:tickDown 1.2s ease-out}
+.booked{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap;padding-top:12px;border-top:1px dashed var(--line)}
+.bchip{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;padding:6px 12px;border-radius:999px;background:var(--ok-50);color:var(--ok);font-size:12.5px}
+.bchip b{font-weight:700}.bchip span{color:var(--ink-2)}.bchip em{font-style:normal;font-weight:700}
+.bchip.pend{background:var(--amber-50);color:var(--amber)}
+@media (max-width:560px){.cw,.cg{grid-template-columns:repeat(7,32px)}.cg .d{height:32px}}
 /* ---------- catalog ---------- */
 .hero{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(120deg,var(--blue) 0%,#0B6FBF 48%,#3E9A5B 100%);color:#fff;padding:36px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:24px;align-items:center;min-height:240px}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.22),transparent 40%),radial-gradient(rgba(255,255,255,.12) 1px,transparent 1px);background-size:auto,20px 20px}
@@ -633,6 +667,7 @@ const I={
   algo:sv('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/>',20),
   star:sv('<circle cx="12" cy="12" r="9"/><path d="m12 7.5 1.4 2.9 3.1.4-2.3 2.2.6 3.1L12 14.6 9.2 16.1l.6-3.1-2.3-2.2 3.1-.4z"/>',20),
   support:sv('<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>',20),
+  cal:sv('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>',16),
   dl:sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',16),
   minus:sv('<path d="M5 12h14"/>',18),
   user:sv('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',16)
@@ -855,7 +890,8 @@ function viewPB(){
     <div><div class="sub">Deal ticket</div><div class="mono" style="font-size:13.5px">PDT ${b.ticket}</div></div>
     <div><span class="chip">${esc(b.type)}</span></div>
     <div><div class="num"><b>${n0(b.bal)}</b> <span class="sub">of ${n0(b.qty)} MT left</span></div><div class="bbar"><i style="width:${b.qty?(b.qty-b.bal)/b.qty*100:0}%"></i></div></div>
-    <div class="acts">${S.user==='customer'&&b.bal>0?`<button class="btn btn-soft btn-sm" data-a="toast" data-msg="Book Price will be designed in a later step" data-tone="info">Book price</button>`:`<span class="sub">${fmtD(b.created)}</span>`}</div></div>`}).join('');
+    <div class="acts">${S.user==='customer'&&b.bal>0?`<button class="btn btn-soft btn-sm" data-a="book" data-t="${b.ticket}">${I.cal}Book price</button>`:`<span class="sub">${b.bal?fmtD(b.created):'Fully booked'}</span>`}</div>
+    ${(b.booked||[]).length?`<div class="booked">${b.booked.map(r=>`<span class="bchip${r.status!=='Booked'?' pend':''}"><b>${esc(r.type)}${r.mode?` · ${r.mode==='screen'?'Screen':'Target'}`:''}</b><span class="num">${n0(r.qty)} MT</span>${r.period?`<span>${esc(r.period)}</span>`:''}${r.price?`<span class="num">@ ${usd(r.price)}</span>`:''}<em>${esc(r.status)}</em></span>`).join('')}</div>`:''}</div>`}).join('');
   return `<div class="head s" style="--i:0"><div><h1>Price bookings</h1><p>One entry is created for each price type when the RM approves the order.</p></div>
     <div class="monthnav"><button aria-label="Previous month" data-a="bkm" data-d="-1" ${idx<=0?'disabled':''}>${I.l}</button><b class="num">${UI.bkMonth.replace('-',' ')}</b><button aria-label="Next month" data-a="bkm" data-d="1" ${idx>=ms.length-1?'disabled':''}>${I.r}</button></div></div>
   <div class="stats">${stat(1,'Day CSP',tot('Day CSP'),'var(--blue)','MT priced')}${stat(2,'Monthly Average',tot('Monthly Average'),'var(--green)','MT priced')}${stat(3,'M-1',tot('M-1'),'#F79009','MT priced')}${stat(4,'Balance to book',bal,'#98A2B3','MT')}</div>
@@ -885,9 +921,68 @@ function viewDrawer(){
     <div class="d-f">${can?`${true?`<button class="btn btn-ghost" data-a="edit" data-id="${po.id}">${I.edit}Edit</button>`:''}<button class="btn btn-bad" data-a="reject" data-id="${po.id}">Reject</button><button class="btn btn-primary" data-a="approve" data-id="${po.id}">${I.check}Approve</button>`
       :u==='customer'&&po.status==='approved'?`<button class="btn btn-primary" data-a="toast" data-msg="Create Delivery will be designed in the next step" data-tone="info">${I.truck}Create delivery</button>`:`<button class="btn btn-ghost" data-a="dclose">Close</button>`}</div></aside>`;
 }
+/* ---------- customer price booking ---------- */
+const BOOK_TYPES=['Day CSP','Period Average','Balance day average','Which ever is higher','SPOT Price'];
+const LIVE={Zinc:2945.5,Lead:1987.25},LIVE_DIR={Zinc:0,Lead:0};
+const fdmy=s=>{const [y,m,d]=s.split('-');return `${d}/${m}/${y}`};
+const todayISO=()=>iso(new Date());
+const usd=v=>'$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+function bookValid(m,b){
+  const q=+m.qty;if(!m.type||!(q>0)||q>b.bal||!Number.isInteger(q))return false;
+  if(m.type==='Period Average'&&!(m.rs&&m.re))return false;
+  if(m.type==='SPOT Price'&&m.spot==='target'&&!(+m.target>0))return false;
+  return true;
+}
+function qtyMsg(m,b){const q=+m.qty;if(m.qty===''||m.qty==null)return '';if(!(q>0))return 'Enter a quantity above 0.';if(!Number.isInteger(q))return 'Use whole tonnes.';if(q>b.bal)return `Only ${n0(b.bal)} MT is left to book.`;return ''}
+function calHTML(m){
+  const t=new Date(),base=new Date(t.getFullYear(),t.getMonth()+m.calM,1),today=todayISO();
+  const month=(d)=>{const y=d.getFullYear(),mo=d.getMonth(),first=new Date(y,mo,1).getDay(),days=new Date(y,mo+1,0).getDate();
+    let cells='';for(let i=0;i<first;i++)cells+='<span></span>';
+    for(let n=1;n<=days;n++){const v=`${y}-${p2(mo+1)}-${p2(n)}`,dis=v<today,inR=m.rs&&m.re&&v>m.rs&&v<m.re,edge=v===m.rs||v===m.re;
+      cells+=`<button type="button" class="d${edge?' edge':''}${inR?' in':''}${v===today?' today':''}" ${dis?'disabled':''} data-a="calday" data-d="${v}" aria-pressed="${edge}">${n}</button>`}
+    return `<div class="cm"><div class="cm-h">${MN[mo]} ${y}</div><div class="cw">${['Su','Mo','Tu','We','Th','Fr','Sa'].map(w=>`<span>${w}</span>`).join('')}</div><div class="cg">${cells}</div></div>`};
+  return `<div class="cal" role="dialog" aria-label="Choose pricing period"><div class="cal-nav"><button type="button" class="icon-btn sm" aria-label="Previous months" data-a="calnav" data-d="-1" ${m.calM<=0?'disabled':''}>${I.l}</button>
+    <span class="hint">${m.rs&&!m.re?'Now pick the end date':'Pick the start date'}</span><button type="button" class="icon-btn sm" aria-label="Next months" data-a="calnav" data-d="1">${I.r}</button></div>
+    <div class="cms">${month(base)}${month(new Date(base.getFullYear(),base.getMonth()+1,1))}</div></div>`;
+}
+function bookModal(m){
+  const b=S.bookings.find(x=>x.ticket===m.t);const po=S.pos.find(p=>p.id===b.dealId);const ok=bookValid(m,b),qm=qtyMsg(m,b);
+  let extra='';
+  if(m.type==='Day CSP')extra=`<div class="field"><label for="bk-date">Pricing period</label><div class="fake-in">${I.cal}<input class="input" id="bk-date" value="${fdmy(m.date)}" readonly></div><span class="hint">Day CSP is priced on today's date.</span></div>`;
+  if(m.type==='Period Average')extra=`<div class="field" style="position:relative"><span class="lbl">Pricing period</span>
+      <button type="button" class="input range-btn${m.cal?' on':''}" data-a="caltog" aria-expanded="${!!m.cal}">${I.cal}<span>${m.rs?`${fdmy(m.rs)} – ${m.re?fdmy(m.re):'…'}`:'<span class="muted">Select start and end dates</span>'}</span></button>
+      ${m.cal?calHTML(m):''}${m.rs&&m.re?`<span class="hint">${Math.round((new Date(m.re)-new Date(m.rs))/864e5)+1} days</span>`:''}</div>`;
+  if(m.type==='SPOT Price')extra=`<div class="field"><span class="lbl">Spot price</span><div class="seg" role="group" aria-label="Spot price mode">${[['screen','Screen price'],['target','Target price']].map(([k,t])=>`<button type="button" aria-pressed="${m.spot===k}" data-a="spot" data-k="${k}">${t}</button>`).join('')}</div></div>
+    ${m.spot==='screen'?`<div class="live"><div><span class="live-dot"></span><span class="eyebrow" style="color:var(--ok)">Live · LME ${b.ptype} cash</span></div><b class="num" data-live="${b.ptype}">${usd(LIVE[b.ptype])}</b><span class="hint">per MT · demo price, updates every 2 seconds · booked at the price shown when you confirm</span></div>`
+      :`<div class="field"><label for="bk-target">Target price (USD per MT)</label><div class="fake-in"><span class="cur">$</span><input class="input num" id="bk-target" type="number" min="0" step="0.5" placeholder="${(LIVE[b.ptype]+25).toFixed(0)}" value="${esc(m.target)}" data-bk="target"></div>
+        <span class="hint">Live price now <b class="num" data-live="${b.ptype}">${usd(LIVE[b.ptype])}</b>. The booking executes when the market reaches your target.</span></div>`}`;
+  return `<div class="m-h"><div><h2>Book price</h2><p><span class="mono">${b.dealId}</span> · PDT ${b.ticket} · ${n0(b.bal)} MT left</p></div><button class="icon-btn" aria-label="Close" data-a="mclose">${I.x}</button></div>
+  <div class="m-b">
+    <div class="pair">
+      <div class="field"><label for="bk-type">Price type <span class="req">*</span></label><select class="input" id="bk-type" data-bk="type">${opt(BOOK_TYPES,m.type,'Select')}</select></div>
+      <div class="field"><label for="bk-qty">Quantity (MT) <span class="req">*</span></label><input class="input num${qm?' err':''}" id="bk-qty" type="number" min="1" max="${b.bal}" placeholder="Up to ${n0(b.bal)}" value="${esc(m.qty)}" data-bk="qty"><span class="hint" id="bk-qmsg" style="${qm?'color:var(--red)':''}">${qm||`Up to ${n0(b.bal)} MT`}</span></div>
+    </div>
+    ${extra?`<div class="bk-extra">${extra}</div>`:''}
+  </div>
+  <div class="m-f"><button class="btn btn-ghost" data-a="mclose">Cancel</button><button class="btn btn-primary" id="bkOk" data-a="bookok" ${ok?'':'disabled'}>Confirm</button></div>`;
+}
+function confirmBook(){
+  const m=UI.modal,b=S.bookings.find(x=>x.ticket===m.t);if(!bookValid(m,b))return;
+  const q=+m.qty,rec={type:m.type,qty:q,at:new Date().toISOString(),status:'Booked'};
+  if(m.type==='Day CSP')rec.period=fdmy(m.date);
+  if(m.type==='Period Average')rec.period=`${fdmy(m.rs)} – ${fdmy(m.re)}`;
+  if(m.type==='SPOT Price'){rec.mode=m.spot;if(m.spot==='screen')rec.price=LIVE[b.ptype];else{rec.price=+m.target;rec.status='Target pending'}}
+  UI.modal=null;render();
+  busy('Booking price…',()=>{b.booked=(b.booked||[]).concat(rec);b.bal-=q;save();UI.newBk={};UI.newBk[b.ticket]=1;render();
+    toast(rec.status==='Target pending'?`Target of ${usd(rec.price)} set for ${n0(q)} MT`:`${n0(q)} MT booked${rec.price?` at ${usd(rec.price)}`:` on ${rec.type}`}`)});
+}
+setInterval(()=>{['Zinc','Lead'].forEach(k=>{const d=(Math.random()-.5)*6;LIVE[k]=Math.round((LIVE[k]+d)*4)/4;LIVE_DIR[k]=d});
+  document.querySelectorAll('[data-live]').forEach(el=>{const k=el.dataset.live;el.textContent=usd(LIVE[k]);el.classList.remove('up','down');void el.offsetWidth;el.classList.add(LIVE_DIR[k]>=0?'up':'down')})},2000);
+
 function viewModal(){
   const m=UI.modal;if(!m)return '';const po=S.pos.find(p=>p.id===m.id);
   const x=`<button class="icon-btn" aria-label="Close" data-a="mclose">${I.x}</button>`;let inner='';
+  if(m.kind==='book')inner=bookModal(m);
   if(m.kind==='approve'||m.kind==='reject'){
     const rej=m.kind==='reject',fin=S.user==='rm';
     const note=rej?`<div class="notice warn">${I.info}<span>The customer will see this order as Rejected, with your remark.</span></div>`
@@ -913,7 +1008,7 @@ function viewModal(){
       ${m.err?`<div class="notice bad" role="alert">${I.info}<span>${esc(m.err)}</span></div>`:''}
     </div><div class="m-f"><button class="btn btn-ghost" data-a="mclose">Cancel</button><button class="btn btn-primary" data-a="esave">Save changes</button></div>`;
   }
-  return `<div class="scrim" style="z-index:110" data-a="mclose"></div><div class="mwrap" style="z-index:111"><div class="modal${m.kind==='edit'?' wide':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
+  return `<div class="scrim" style="z-index:110" data-a="mclose"></div><div class="mwrap" style="z-index:111"><div class="modal${m.kind==='edit'||m.kind==='book'?' wide':''}" role="dialog" aria-modal="true">${inner}</div></div>`;
 }
 function viewSuccess(){
   const s=UI.success;if(!s)return '';
@@ -1058,6 +1153,12 @@ document.addEventListener('click',e=>{
     case 'edit':{const po=S.pos.find(p=>p.id===ds.id);UI.modal={kind:'edit',id:ds.id,draft:{qty:po.qty,month:po.month,rows:po.rows.map(r=>({...r}))}};render();break}
     case 'mclose':UI.modal=null;render();break;
     case 'mok':decide();break;
+    case 'book':{const b=S.bookings.find(x=>x.ticket===ds.t);UI.modal={kind:'book',t:ds.t,type:BOOK_TYPES.includes(b.type)?b.type:'',qty:'',date:todayISO(),rs:'',re:'',cal:false,calM:0,spot:'screen',target:''};render();setTimeout(()=>{const q=document.getElementById('bk-qty');if(q)q.focus()},40);break}
+    case 'bookok':confirmBook();break;
+    case 'spot':UI.modal.spot=ds.k;render();break;
+    case 'caltog':UI.modal.cal=!UI.modal.cal;render();break;
+    case 'calnav':UI.modal.calM=Math.max(0,UI.modal.calM+(+ds.d));render();break;
+    case 'calday':{const m=UI.modal,v=ds.d;if(!m.rs||m.re){m.rs=v;m.re=''}else if(v<m.rs){m.re=m.rs;m.rs=v;m.cal=false}else{m.re=v;m.cal=false}render();break}
     case 'em':UI.modal.draft.month=ds.m;render();break;
     case 'eradd':{const d=UI.modal.draft,used=d.rows.map(r=>r.type);d.rows.push({qty:Math.max(0,d.qty-sum(d.rows)),type:PRICE_TYPES.find(x=>!used.includes(x))||'',month:d.month});UI.modal.err='';render();break}
     case 'erdel':UI.modal.draft.rows.splice(+ds.j,1);UI.modal.err='';render();break;
@@ -1090,6 +1191,11 @@ document.addEventListener('change',e=>{
 document.addEventListener('input',e=>{
   const t=e.target,ds=t.dataset;
   if('remark' in ds&&UI.modal){UI.modal.remark=t.value;return}
+  if(ds.bk&&UI.modal&&UI.modal.kind==='book'){const m=UI.modal,b=S.bookings.find(x=>x.ticket===m.t);m[ds.bk]=t.value;
+    if(ds.bk==='type'){if(m.type!=='Period Average')m.cal=false;render();return}
+    const ok=document.getElementById('bkOk');if(ok)ok.disabled=!bookValid(m,b);
+    if(ds.bk==='qty'){const qm=qtyMsg(m,b),el=document.getElementById('bk-qmsg');t.classList.toggle('err',!!qm);if(el){el.textContent=qm||`Up to ${n0(b.bal)} MT`;el.style.color=qm?'var(--red)':''}}
+    return}
   if(ds.cart==='qty'){S.cart[ds.i].qty=+t.value||0;live(+ds.i);return}
   if(ds.row==='qty'){S.cart[ds.i].rows[ds.j].qty=+t.value||0;live(+ds.i);return}
 });
