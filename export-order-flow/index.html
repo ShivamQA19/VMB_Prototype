@@ -798,10 +798,7 @@ function statusHTML(po){const s=ST[po.status],last=po.history[po.history.length-
   return `<div>${trk(po)}<span class="pill ${s.cls}">${s.label}</span><div class="sub" style="margin-top:4px">${esc(hint)}</div></div>`}
 function actsHTML(po){
   const u=S.user;
-  if(u==='customer'&&po.status==='approved')return `<div class="acts"><button class="btn btn-primary btn-sm" data-a="toast" data-msg="Create Delivery will be designed in the next step" data-tone="info">${I.truck}Create delivery</button>
-    <button class="icon-btn sm" title="Proforma invoice" aria-label="Proforma invoice" data-a="toast" data-msg="Proforma invoice is outside this prototype" data-tone="info">${I.inv}</button>
-    <button class="icon-btn sm" title="Preponement" aria-label="Preponement" data-a="toast" data-msg="Preponement is outside this prototype" data-tone="info">${I.swap}</button>
-    <button class="icon-btn sm" title="Rollover" aria-label="Rollover" data-a="toast" data-msg="Rollover is outside this prototype" data-tone="info">${I.roll}</button></div>`;
+  if(u==='customer'&&po.status==='approved')return `<div class="acts"><button class="btn btn-primary btn-sm" data-a="toast" data-msg="Create Delivery will be designed in the next step" data-tone="info">${I.truck}Create delivery</button></div>`;
   if((u==='asm'&&po.status==='created')||(u==='rm'&&po.status==='asm'))return `<div class="acts">${true?`<button class="icon-btn sm" title="Edit" aria-label="Edit ${po.id}" data-a="edit" data-id="${po.id}">${I.edit}</button>`:''}<button class="btn btn-bad btn-sm" data-a="reject" data-id="${po.id}">${I.ban}Reject</button><button class="btn btn-ok btn-sm" data-a="approve" data-id="${po.id}">${I.check}Approve</button></div>`;
   return `<div class="acts"><button class="btn btn-ghost btn-sm" data-a="view" data-id="${po.id}">Details</button></div>`;
 }
