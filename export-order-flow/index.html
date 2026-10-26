@@ -252,6 +252,22 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .quick button:hover{border-color:var(--blue);color:var(--blue)}
 .quick button[aria-pressed="true"]{background:var(--blue-50);border-color:var(--blue);color:var(--blue)}
 .ci-ctrls .qty{width:260px}
+
+/* PO filters + pager */
+.fbar{padding:18px 20px;display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.fgrid{flex:1 1 640px;display:grid;grid-template-columns:repeat(2,minmax(0,150px)) minmax(0,1fr) minmax(0,1.2fr);gap:12px}
+.fbar .input{height:44px}
+.fbar input[type=date]{padding-right:10px}
+.sbx{position:relative}.sbx svg{position:absolute;left:14px;top:14px;color:var(--ink-3)}.sbx .input{padding-left:38px}
+.factions{display:flex;gap:8px;flex-wrap:wrap}
+.factions .btn{min-height:44px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:4px 4px 0}
+.pg{display:flex;gap:6px;flex-wrap:wrap}
+.pg button{min-width:40px;height:40px;padding:0 14px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-weight:600;font-size:13.5px;color:var(--ink-2);transition:all .18s}
+.pg button:hover:not([disabled]){border-color:var(--blue);color:var(--blue)}
+.pg button[aria-current="page"]{background:var(--blue);border-color:var(--blue);color:#fff}
+.pg button[disabled]{color:#B4BDC9;cursor:default}
+@media (max-width:760px){.fgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.fgrid .field:nth-child(n+3){grid-column:1/-1}.factions{width:100%}.factions .btn{flex:1}}
 /* ---------- catalog ---------- */
 .hero{position:relative;overflow:hidden;border-radius:28px;background:linear-gradient(120deg,var(--blue) 0%,#0B6FBF 48%,#3E9A5B 100%);color:#fff;padding:36px 40px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,.9fr);gap:24px;align-items:center;min-height:240px}
 .hero::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 85% 20%,rgba(255,255,255,.22),transparent 40%),radial-gradient(rgba(255,255,255,.12) 1px,transparent 1px);background-size:auto,20px 20px}
@@ -373,7 +389,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .oc .id:hover{text-decoration:underline}
 .oc .t{font-weight:700;font-size:14.5px;overflow-wrap:anywhere}
 .oc .sub{font-size:12.5px;color:var(--ink-3)}
-.oc .qty b{font-size:19px;font-weight:800}
+.oc .oqty b{font-size:19px;font-weight:800}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--bg);font-size:12.5px;font-weight:600;white-space:nowrap}
 .chip em{font-style:normal;color:var(--ink-3);font-weight:500}
@@ -509,7 +525,7 @@ const MOUS=['MOU500011445','MOU500011502'];
 const ROLES={
   customer:{label:'Customer',sub:'LQ Metals Pvt Ltd',initials:'LQ',email:'customer@lqmetals.com',desc:'Plans orders',home:'catalog'},
   asm:{label:'ASM',sub:'Approver 1',initials:'AS',email:'asm@vedanta.com',desc:'First approval',home:'po'},
-  rm:{label:'RM',sub:'Final approver',initials:'RM',email:'rm@vedanta.com',desc:'Final approval',home:'po'}
+  rm:{label:'RM',sub:'Approver 2',initials:'RM',email:'rm@vedanta.com',desc:'Second approval',home:'po'}
 };
 const PASSWORD='demo123';
 const PRODUCTS=[
@@ -563,14 +579,16 @@ const KEY='vedanta-export-order-proto-v3';
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){S=null}
 if(!S||!S.pos)S=seed();
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+const iso=d=>`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+function defFilters(){const t=new Date(),f=new Date(t.getFullYear(),t.getMonth()-6,t.getDate());return {from:iso(f),to:iso(t),q:'',prod:''}}
+const p2=n=>String(n).padStart(2,'0');
 const defStat=r=>r==='asm'?'created':r==='rm'?'asm':'all';
 const UI={route:S.user?ROLES[S.user].home:'login',anim:true,loading:false,solid:false,label:'',loginErr:'',loginEmail:'',
   pdp:null,cat:'All',search:'',stat:S.user?defStat(S.user):'all',bkMonth:toBk(MONTHS[0]),
-  menu:null,modal:null,drawer:null,success:null,flash:{},newBk:{},cartErr:'',bump:false,toast:null,mini:false,side:false,open:{manage:true},justOpened:null};
+  menu:null,modal:null,drawer:null,success:null,flash:{},newBk:{},cartErr:'',bump:false,toast:null,mini:false,side:false,page:1,f:defFilters(),open:{manage:true},justOpened:null};
 
 /* ---------- helpers ---------- */
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const p2=n=>String(n).padStart(2,'0');
 const fmtD=iso=>{const d=new Date(iso);return `${d.getDate()} ${MN[d.getMonth()]} ${d.getFullYear()}`};
 const fmtT=iso=>{const d=new Date(iso);let h=d.getHours();const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${p2(d.getMinutes())} ${ap}`};
 const fmt=iso=>`${fmtD(iso)} · ${fmtT(iso)}`;
@@ -615,6 +633,7 @@ const I={
   algo:sv('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M14 14h2M8 17h2"/>',20),
   star:sv('<circle cx="12" cy="12" r="9"/><path d="m12 7.5 1.4 2.9 3.1.4-2.3 2.2.6 3.1L12 14.6 9.2 16.1l.6-3.1-2.3-2.2 3.1-.4z"/>',20),
   support:sv('<path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/>',20),
+  dl:sv('<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',16),
   minus:sv('<path d="M5 12h14"/>',18),
   user:sv('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',16)
 };
@@ -770,7 +789,7 @@ function viewCart(){
 
 /* ---------- orders ---------- */
 function trk(po){
-  const h=po.history,a=h.find(x=>x.by==='ASM'&&x.action!=='Edited'),r=h.find(x=>x.by==='RM');
+  const h=po.history,a=h.find(x=>x.by==='ASM'&&x.action!=='Edited'),r=h.find(x=>x.by==='RM'&&x.action!=='Edited');
   const c2=a?(a.action==='Rejected'?'r':'d'):po.status==='created'?'c':'',c3=r?(r.action==='Rejected'?'r':'d'):po.status==='asm'?'c':'';
   return `<div class="trk" aria-hidden="true"><i class="d"></i><u>${c2==='d'||c2==='r'?'<b'+(c2==='r'?' style="background:var(--red)"':'')+'></b>':''}</u><i class="${c2}"></i><u>${c3==='d'||c3==='r'?'<b'+(c3==='r'?' style="background:var(--red)"':'')+'></b>':''}</u><i class="${c3}"></i></div>`;
 }
@@ -783,7 +802,7 @@ function actsHTML(po){
     <button class="icon-btn sm" title="Proforma invoice" aria-label="Proforma invoice" data-a="toast" data-msg="Proforma invoice is outside this prototype" data-tone="info">${I.inv}</button>
     <button class="icon-btn sm" title="Preponement" aria-label="Preponement" data-a="toast" data-msg="Preponement is outside this prototype" data-tone="info">${I.swap}</button>
     <button class="icon-btn sm" title="Rollover" aria-label="Rollover" data-a="toast" data-msg="Rollover is outside this prototype" data-tone="info">${I.roll}</button></div>`;
-  if((u==='asm'&&po.status==='created')||(u==='rm'&&po.status==='asm'))return `<div class="acts">${u==='asm'?`<button class="icon-btn sm" title="Edit" aria-label="Edit ${po.id}" data-a="edit" data-id="${po.id}">${I.edit}</button>`:''}<button class="btn btn-bad btn-sm" data-a="reject" data-id="${po.id}">${I.ban}Reject</button><button class="btn btn-ok btn-sm" data-a="approve" data-id="${po.id}">${I.check}Approve</button></div>`;
+  if((u==='asm'&&po.status==='created')||(u==='rm'&&po.status==='asm'))return `<div class="acts">${true?`<button class="icon-btn sm" title="Edit" aria-label="Edit ${po.id}" data-a="edit" data-id="${po.id}">${I.edit}</button>`:''}<button class="btn btn-bad btn-sm" data-a="reject" data-id="${po.id}">${I.ban}Reject</button><button class="btn btn-ok btn-sm" data-a="approve" data-id="${po.id}">${I.check}Approve</button></div>`;
   return `<div class="acts"><button class="btn btn-ghost btn-sm" data-a="view" data-id="${po.id}">Details</button></div>`;
 }
 function viewPO(){
@@ -791,20 +810,42 @@ function viewPO(){
   const cnt=k=>k==='all'?S.pos.length:k==='pending'?S.pos.filter(p=>p.status==='created'||p.status==='asm').length:S.pos.filter(p=>p.status===k).length;
   let list=S.pos.slice().sort((a,b)=>b.created.localeCompare(a.created));
   if(UI.stat==='pending')list=list.filter(p=>p.status==='created'||p.status==='asm');else if(UI.stat!=='all')list=list.filter(p=>p.status===UI.stat);
-  if(UI.search)list=list.filter(p=>p.id.toLowerCase().includes(UI.search.toLowerCase()));
+  const F=UI.f;
+  if(F.from)list=list.filter(p=>iso(new Date(p.created))>=F.from);
+  if(F.to)list=list.filter(p=>iso(new Date(p.created))<=F.to);
+  if(F.q)list=list.filter(p=>p.id.toLowerCase().includes(F.q.toLowerCase()));
+  if(F.prod)list=list.filter(p=>p.variant===F.prod);
+  const total=list.length,PAGE=5,pages=Math.max(1,Math.ceil(total/PAGE));if(UI.page>pages)UI.page=pages;
+  const start=(UI.page-1)*PAGE;list=list.slice(start,start+PAGE);
+  const prods=[...new Set(S.pos.map(p=>p.variant))].sort();
+  const fdirty=F.q||F.prod||JSON.stringify({from:F.from,to:F.to})!==JSON.stringify({from:defFilters().from,to:defFilters().to});
+  const fbar=`<form class="card fbar s" style="--i:1" data-form="filter" novalidate>
+    <div class="fgrid">
+      <div class="field"><label for="f-from">From</label><input type="date" class="input" id="f-from" value="${F.from}"></div>
+      <div class="field"><label for="f-to">To</label><input type="date" class="input" id="f-to" value="${F.to}"></div>
+      <div class="field"><label for="f-search">Search order</label><div class="sbx">${I.search}<input class="input" id="f-search" placeholder="PO number" value="${esc(F.q)}"></div></div>
+      <div class="field"><label for="f-prod">Product description</label><select class="input" id="f-prod">${opt(prods,F.prod,'All products')}</select></div>
+    </div>
+    <div class="factions"><button class="btn btn-primary" type="submit">Apply</button><button class="btn btn-ghost" type="button" data-a="fclear" ${fdirty?'':'disabled'}>Clear all</button>
+      <button class="btn btn-ghost" type="button" data-a="toast" data-tone="info" data-msg="Export is outside this prototype">${I.dl}Export data</button></div>
+  </form>`;
+  const pager=pages>=1&&total?`<div class="pager"><span class="muted num">Showing ${start+1} – ${start+list.length} of ${total}</span><div class="pg">
+    <button data-a="page" data-p="1" ${UI.page===1?'disabled':''}>First</button>
+    ${Array.from({length:pages},(_,k)=>`<button class="n" data-a="page" data-p="${k+1}" ${UI.page===k+1?'aria-current="page"':''}>${k+1}</button>`).join('')}
+    <button data-a="page" data-p="${pages}" ${UI.page===pages?'disabled':''}>Last</button></div></div>`:'';
   const tabs=appr?[[mineKey,'Needs your approval'],['all','All'],['approved','Approved'],['rejected','Rejected']]:[['all','All'],['pending','In approval'],['approved','Approved'],['rejected','Rejected']];
   const rows=list.map((po,i)=>`<div class="oc s${UI.flash[po.id]?' flash':''}" style="--i:${Math.min(i,8)+2}">
     <span class="thumb sm"><img src="${imgOf(po.pid,po.variant)}" alt=""></span>
     <div style="min-width:0"><button class="id" data-a="view" data-id="${po.id}">${po.id}</button>${UI.flash[po.id]?'<span class="new">NEW</span>':''}<div class="t">${esc(po.variant)}</div><div class="sub">${fmt(po.created)}${appr?` · ${esc(ROLES.customer.sub)}`:''}</div></div>
-    <div class="qty"><b class="num">${n0(po.qty)}</b> <span class="sub">MT</span><div class="sub">Delivery ${mNice(po.month)}</div></div>
+    <div class="oqty"><b class="num">${n0(po.qty)}</b> <span class="sub">MT</span><div class="sub">Delivery ${mNice(po.month)}</div></div>
     <div class="chips">${po.rows.map(r=>`<span class="chip">${esc(r.type)}<em class="num">${n0(r.qty)}</em></span>`).join('')}</div>
     ${statusHTML(po)}${actsHTML(po)}</div>`).join('');
   const empty=appr&&UI.stat===mineKey?`<span class="ill">${I.ok}</span><b>Nothing needs your approval</b><span>${u==='asm'?'New planned orders from customers will appear here.':'Orders approved by the ASM will appear here.'}</span>`
     :`<span class="ill">${I.clip}</span><b>No orders here yet</b><span>${u==='customer'?'Plan an order from the catalog to see it here.':'Try another filter.'}</span>${u==='customer'?`<button class="btn btn-primary" data-a="nav" data-to="catalog">Browse products ${I.arrow}</button>`:''}`;
-  return `<div class="head s" style="--i:0"><div><h1>${appr?'Approvals':'My orders'}</h1><p>${appr?(u==='asm'?'You review first. Approved orders go to the RM.':'You give the final approval. It creates the price bookings.'):'Planned orders and where they are in approval.'}</p></div>
-    <form class="searchbox" data-form="filter" role="search">${I.search}<input id="f-search" placeholder="Search PO number" value="${esc(UI.search)}" aria-label="Search PO number"></form></div>
-  <div class="tabs s" style="--i:1" role="group" aria-label="Filter orders">${tabs.map(([k,t])=>`<button aria-pressed="${UI.stat===k}" data-a="stat" data-k="${k}">${k===mineKey&&cnt(k)?'<span class="mine"></span>':''}${t}<span class="n num">${cnt(k)}</span></button>`).join('')}</div>
-  ${list.length?`<div class="olist">${rows}</div><p class="foot">${list.length} of ${S.pos.length} orders</p>`:`<div class="card s" style="--i:2"><div class="empty">${empty}</div></div>`}`;
+  return `<div class="head s" style="--i:0"><div><h1>${appr?'Approvals':'My orders'}</h1><p>${appr?(u==='asm'?'You review first. Approved orders go to the RM.':'Approve orders reviewed by the ASM.'):'Planned orders and where they are in approval.'}</p></div></div>
+  ${fbar}
+  <div class="tabs s" style="--i:2" role="group" aria-label="Filter orders">${tabs.map(([k,t])=>`<button aria-pressed="${UI.stat===k}" data-a="stat" data-k="${k}">${k===mineKey&&cnt(k)?'<span class="mine"></span>':''}${t}<span class="n num">${cnt(k)}</span></button>`).join('')}</div>
+  ${list.length?`<div class="olist">${rows}</div>${pager}`:`<div class="card s" style="--i:2"><div class="empty">${empty}</div></div>`}`;
 }
 function viewPB(){
   const ms=[...new Set([...S.bookings.map(b=>b.month),...MONTHS.map(toBk)])].sort((a,b)=>bkKey(a)-bkKey(b)),idx=ms.indexOf(UI.bkMonth);
@@ -818,7 +859,7 @@ function viewPB(){
     <div><span class="chip">${esc(b.type)}</span></div>
     <div><div class="num"><b>${n0(b.bal)}</b> <span class="sub">of ${n0(b.qty)} MT left</span></div><div class="bbar"><i style="width:${b.qty?(b.qty-b.bal)/b.qty*100:0}%"></i></div></div>
     <div class="acts">${S.user==='customer'&&b.bal>0?`<button class="btn btn-soft btn-sm" data-a="toast" data-msg="Book Price will be designed in a later step" data-tone="info">Book price</button>`:`<span class="sub">${fmtD(b.created)}</span>`}</div></div>`}).join('');
-  return `<div class="head s" style="--i:0"><div><h1>Price bookings</h1><p>One entry is created for each price type when the RM gives final approval.</p></div>
+  return `<div class="head s" style="--i:0"><div><h1>Price bookings</h1><p>One entry is created for each price type when the RM approves the order.</p></div>
     <div class="monthnav"><button aria-label="Previous month" data-a="bkm" data-d="-1" ${idx<=0?'disabled':''}>${I.l}</button><b class="num">${UI.bkMonth.replace('-',' ')}</b><button aria-label="Next month" data-a="bkm" data-d="1" ${idx>=ms.length-1?'disabled':''}>${I.r}</button></div></div>
   <div class="stats">${stat(1,'Day CSP',tot('Day CSP'),'var(--blue)','MT priced')}${stat(2,'Monthly Average',tot('Monthly Average'),'var(--green)','MT priced')}${stat(3,'M-1',tot('M-1'),'#F79009','MT priced')}${stat(4,'Balance to book',bal,'#98A2B3','MT')}</div>
   ${list.length?`<div class="olist">${rows}</div>`:`<div class="card s" style="--i:5"><div class="empty"><span class="ill">${I.tag}</span><b>No price bookings in ${UI.bkMonth.replace('-',' ')}</b><span>They appear here once the RM approves an order priced in this month.</span></div></div>`}`;
@@ -826,11 +867,11 @@ function viewPB(){
 
 /* ---------- overlays ---------- */
 function timeline(po){
-  const h=po.history,a=h.find(x=>x.by==='ASM'&&x.action!=='Edited'),r=h.find(x=>x.by==='RM');
+  const h=po.history,a=h.find(x=>x.by==='ASM'&&x.action!=='Edited'),r=h.find(x=>x.by==='RM'&&x.action!=='Edited');
   const n=(st,t,ev,w)=>`<div class="tl ${st}"><span class="dot">${st==='done'?I.check:st==='rej'?I.x:''}</span><div><b>${t}</b><small>${ev?`${ev.action} · ${fmt(ev.at)}`:w}</small>${ev&&ev.remark?`<div class="rm">“${esc(ev.remark)}”</div>`:''}</div></div>`;
   return n('done','Planned by customer',{action:'Created',at:po.created})
     +(a?n(a.action==='Rejected'?'rej':'done','ASM review',a):n(po.status==='created'?'cur':'','ASM review',null,po.status==='rejected'?'Not reached':'Waiting'))
-    +(r?n(r.action==='Rejected'?'rej':'done','RM final approval',r):n(po.status==='asm'?'cur':'','RM final approval',null,po.status==='rejected'?'Not reached':'Waiting'));
+    +(r?n(r.action==='Rejected'?'rej':'done','RM approval',r):n(po.status==='asm'?'cur':'','RM approval',null,po.status==='rejected'?'Not reached':'Waiting'));
 }
 function viewDrawer(){
   const po=UI.drawer&&S.pos.find(p=>p.id===UI.drawer);if(!po)return '';
@@ -844,7 +885,7 @@ function viewDrawer(){
       ${bks.length?`<div><div class="sec-t">Price bookings</div><div class="ptl">${bks.map(b=>`<div><span>${esc(b.type)}</span><span class="mono">PDT ${b.ticket}</span></div>`).join('')}</div></div>`:''}
       <div><div class="sec-t">Activity</div><div class="log">${po.history.slice().reverse().map(x=>`<div><span><b>${x.by}</b> ${esc(x.action.toLowerCase())}${x.remark?` · ${esc(x.remark)}`:''}</span><time class="num">${fmt(x.at)}</time></div>`).join('')}</div></div>
     </div>
-    <div class="d-f">${can?`${u==='asm'?`<button class="btn btn-ghost" data-a="edit" data-id="${po.id}">${I.edit}Edit</button>`:''}<button class="btn btn-bad" data-a="reject" data-id="${po.id}">Reject</button><button class="btn btn-primary" data-a="approve" data-id="${po.id}">${I.check}${u==='rm'?'Final approval':'Approve'}</button>`
+    <div class="d-f">${can?`${true?`<button class="btn btn-ghost" data-a="edit" data-id="${po.id}">${I.edit}Edit</button>`:''}<button class="btn btn-bad" data-a="reject" data-id="${po.id}">Reject</button><button class="btn btn-primary" data-a="approve" data-id="${po.id}">${I.check}Approve</button>`
       :u==='customer'&&po.status==='approved'?`<button class="btn btn-primary" data-a="toast" data-msg="Create Delivery will be designed in the next step" data-tone="info">${I.truck}Create delivery</button>`:`<button class="btn btn-ghost" data-a="dclose">Close</button>`}</div></aside>`;
 }
 function viewModal(){
@@ -853,9 +894,9 @@ function viewModal(){
   if(m.kind==='approve'||m.kind==='reject'){
     const rej=m.kind==='reject',fin=S.user==='rm';
     const note=rej?`<div class="notice warn">${I.info}<span>The customer will see this order as Rejected, with your remark.</span></div>`
-      :fin?`<div class="notice ok">${I.check}<span>Final approval. The order becomes Approved and ${po.rows.length} price booking ${po.rows.length>1?'entries are':'entry is'} created.</span></div>`
-      :`<div class="notice">${I.info}<span>The order goes to the RM for final approval.</span></div>`;
-    inner=`<div class="m-h"><div><h2>${rej?'Reject order':fin?'Give final approval':'Approve order'}</h2><p><span class="mono">${po.id}</span> · ${esc(po.variant)} · ${n0(po.qty)} MT</p></div>${x}</div>
+      :fin?''
+      :`<div class="notice">${I.info}<span>The order goes to the RM for approval.</span></div>`;
+    inner=`<div class="m-h"><div><h2>${rej?'Reject order':'Approval'}</h2><p><span class="mono">${po.id}</span> · ${esc(po.variant)} · ${n0(po.qty)} MT</p></div>${x}</div>
     <div class="m-b">${note}<div class="field"><label for="remark">Remark${rej?'':' (optional)'}</label><textarea class="input${m.err?' err':''}" id="remark" data-remark placeholder="${rej?'Why is this order rejected?':'Add a note'}">${esc(m.remark||'')}</textarea>${m.err?`<span class="hint" style="color:var(--red)">${esc(m.err)}</span>`:''}</div></div>
     <div class="m-f"><button class="btn btn-ghost" data-a="mclose">Cancel</button><button class="btn ${rej?'btn-danger':'btn-primary'}" data-a="mok">${rej?'Reject':fin?'Approve':'Approve & send to RM'}</button></div>`;
   }
@@ -957,7 +998,7 @@ function decide(){
   busy(m.kind==='reject'?'Rejecting…':who==='RM'?'Approving and creating price bookings…':'Approving…',()=>{
     const now=new Date().toISOString();UI.flash={};UI.flash[po.id]=1;
     if(m.kind==='reject'){po.status='rejected';po.history.push({at:now,by:who,action:'Rejected',remark});notify('customer',`${po.id} was rejected by the ${who}: ${remark}`);save();render();toast(`${po.id} rejected`,'info');return}
-    if(who==='ASM'){po.status='asm';po.history.push({at:now,by:'ASM',action:'Approved',remark});notify('rm',`${po.id} was approved by the ASM and needs your final approval.`);notify('customer',`${po.id} was approved by the ASM and sent to the RM.`);save();render();toast(`${po.id} approved and sent to the RM`);return}
+    if(who==='ASM'){po.status='asm';po.history.push({at:now,by:'ASM',action:'Approved',remark});notify('rm',`${po.id} was approved by the ASM and needs your approval.`);notify('customer',`${po.id} was approved by the ASM and sent to the RM.`);save();render();toast(`${po.id} approved and sent to the RM`);return}
     po.status='approved';po.history.push({at:now,by:'RM',action:'Approved',remark});UI.newBk={};
     po.rows.forEach((r,i)=>{const t=String(1791500000000+Math.floor(Math.random()*90000000)+i);S.bookings.push({dealId:po.id,ptype:P(po.pid).type,ticket:t,type:r.type,qty:+r.qty,bal:+r.qty,month:toBk(r.month),created:now});UI.newBk[t]=1});
     notify('customer',`${po.id} is approved. You can now create a delivery.`);UI.bkMonth=toBk(po.rows[0].month);save();render();
@@ -974,7 +1015,7 @@ function saveEdit(){
   if(+d.qty!==po.qty)ch.push(`quantity ${n0(po.qty)} → ${n0(d.qty)} MT`);if(d.month!==po.month)ch.push(`delivery ${mNice(po.month)} → ${mNice(d.month)}`);
   if(JSON.stringify(nr)!==JSON.stringify(po.rows))ch.push(`price types ${nr.map(r=>`${r.type} ${r.qty}`).join(', ')}`);
   po.qty=+d.qty;po.month=d.month;po.rows=nr;
-  if(ch.length){po.history.push({at:new Date().toISOString(),by:'ASM',action:'Edited',remark:ch.join('; ')});notify('customer',`${po.id} was edited by the ASM: ${ch.join('; ')}`)}
+  const who=S.user==='rm'?'RM':'ASM';if(ch.length){po.history.push({at:new Date().toISOString(),by:who,action:'Edited',remark:ch.join('; ')});notify('customer',`${po.id} was edited by the ${who}: ${ch.join('; ')}`)}
   save();UI.modal=null;UI.drawer=po.id;render();toast(ch.length?`${po.id} updated`:'No changes to save','info');
 }
 function live(i){
@@ -1011,7 +1052,9 @@ document.addEventListener('click',e=>{
     case 'radd':{const c=S.cart[ds.i],used=c.rows.map(r=>r.type);c.rows.push({qty:Math.max(0,c.qty-sum(c.rows)),type:PRICE_TYPES.find(x=>!used.includes(x))||'',month:c.month});save();render();break}
     case 'rdel':S.cart[ds.i].rows.splice(+ds.j,1);save();render();break;
     case 'plancart':planCart();break;
-    case 'stat':UI.stat=ds.k;UI.anim=true;render();break;
+    case 'fclear':UI.f=defFilters();UI.page=1;UI.anim=true;render();break;
+    case 'page':UI.page=+ds.p;UI.anim=true;render();window.scrollTo({top:0,behavior:'smooth'});break;
+    case 'stat':UI.page=1;UI.stat=ds.k;UI.anim=true;render();break;
     case 'view':UI.drawer=ds.id;render();break;
     case 'dclose':UI.drawer=null;render();break;
     case 'approve':case 'reject':UI.modal={kind:a,id:ds.id,remark:''};render();setTimeout(()=>{const r=document.getElementById('remark');if(r)r.focus()},30);break;
@@ -1034,8 +1077,10 @@ document.addEventListener('submit',e=>{
     if(!email||!pwd){UI.loginErr='Enter your email and password.';render();return}
     if(!role||pwd!==PASSWORD){UI.loginErr=`That email and password don't match. Try a demo role below.`;render();return}
     login(role)}
-  if(f==='search'){const q=document.getElementById('gsearch').value.trim();go('po',()=>{UI.search=q;UI.stat='all'})}
-  if(f==='filter'){UI.search=document.getElementById('f-search').value.trim();if(UI.search)UI.stat='all';UI.anim=true;render()}
+  if(f==='search'){const q=document.getElementById('gsearch').value.trim();go('po',()=>{UI.f={...defFilters(),q};UI.page=1;UI.stat='all'})}
+  if(f==='filter'){const v=id=>document.getElementById(id).value;UI.f={from:v('f-from'),to:v('f-to'),q:v('f-search').trim(),prod:v('f-prod')};
+    if(UI.f.from&&UI.f.to&&UI.f.from>UI.f.to){const x=UI.f.from;UI.f.from=UI.f.to;UI.f.to=x}
+    UI.page=1;if(UI.f.q)UI.stat='all';UI.anim=true;render();toast('Filters applied','info')}
 });
 document.addEventListener('change',e=>{
   const t=e.target,ds=t.dataset;
