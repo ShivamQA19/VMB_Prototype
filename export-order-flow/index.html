@@ -749,11 +749,7 @@ function shell(content){
 function viewCatalog(){
   const mineOpen=S.pos.filter(p=>p.status==='created'||p.status==='asm').length,ready=S.pos.filter(p=>p.status==='approved').length;
   const list=PRODUCTS.filter(p=>UI.cat==='All'||p.type===UI.cat);
-  return `<section class="hero s" style="--i:0"><div><div class="eyebrow">${esc(ROLES.customer.sub)}</div><h1>${greet()}. What are we ordering today?</h1>
-      <p>Pick a product, choose quantity and delivery month, and send it for approval.</p>
-      <div class="hero-stats"><button data-a="gostat" data-k="pending"><b class="num" data-count="${mineOpen}">${mineOpen}</b><small>Orders in approval</small></button><button data-a="gostat" data-k="approved"><b class="num" data-count="${ready}">${ready}</b><small>Ready for delivery</small></button></div></div>
-    <div class="hero-art"><img src="${IMG.jumbo}" alt=""><img src="${IMG.bundle}" alt=""></div></section>
-  <div class="filters s" style="--i:1"><h2>Products</h2><div class="seg" role="group" aria-label="Filter by metal">${['All','Zinc','Lead'].map(x=>`<button aria-pressed="${UI.cat===x}" data-a="cat" data-k="${x}">${x}</button>`).join('')}</div></div>
+  return `  <div class="filters s" style="--i:0"><h2>Products</h2><div class="seg" role="group" aria-label="Filter by metal">${['All','Zinc','Lead'].map(x=>`<button aria-pressed="${UI.cat===x}" data-a="cat" data-k="${x}">${x}</button>`).join('')}</div></div>
   <div class="pgrid">${list.map((p,i)=>`<article class="pc s" style="--i:${i+2}"><div class="pc-img"><span class="tag ${p.type.toLowerCase()}">${p.type}</span><img src="${IMG[p.img]}" alt="${esc(p.name)}" loading="lazy"></div>
     <div class="pc-b"><h3>${esc(p.name)}</h3><p>${esc(p.full)}</p><button class="btn btn-primary btn-block" data-a="buy" data-id="${p.id}">Buy now ${I.arrow}</button></div></article>`).join('')}</div>`;
 }
