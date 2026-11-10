@@ -1,15 +1,17 @@
-# Ledger Reconciliation – Group-wise Prototype (REQ-01)
+# Ledger Reconciliation – Supplier (HZL Console) Prototype
 
-Clickable prototype of the group-wise Customer Reconciliation view for Vedanta Metal Bazaar.
-Navigation: **Reports → Financial → Ledger Reconciliation**. The existing tab is enhanced; there is no separate dashboard tab.
+Supplier-side Ledger Reconciliation for Vedanta Metal Bazaar, under **Reports → Financial → Ledger Reconciliation**.
+A switch at the top moves between this view and the customer view.
 
-- **Customer Group** is a searchable dropdown (name or code) and must be picked first. Customer Code, Customer Name, Status, Region and Duration stay disabled until then.
-- Picking a group fills **Customer Code** and **Customer Name** with every customer in the group and loads the listing.
-- Unticking a code or name removes that customer's rows. Status, Region and Duration apply on **APPLY**. **Clear All** resets the page.
-- Rows follow the Ledger Reconciliation layout: Duration, Opening / Closing Balance, Customer Code / Name, status and expand (TDS/TCS removed). 6 records per page.
-- The expanded row shows Ledger Report, Verified On, Customer Feedback, Remarks and Add Remark.
-- **Duration** is half-yearly: HY1 (Apr – Sep) or HY2 (Oct – Mar).
-- A group with no name shows its group code instead of "NA".
-- Proposed for review: status summary chips, group status such as "Pending (2 of 6 verified)", and Duration defaulting to the current half-year.
+- **Period-wise dashboards** (REQ-01 / REQ-06): pick HY1 (Apr – Sep) or HY2 (Oct – Mar); everything below follows that period.
+- **Reconciliation Summary** in the same format as the status mail: Region × Pending / Exception Raised / Verified / Total / % Pending.
+- **Send Status Mail** button opens a preview of the REQ-02 mail (sent automatically on the 15th and 29th), with the attachment list including Recon Period.
+- **Exception alert**: when customers raise an exception that day, a banner shows the evening mail to all RFMs, with a preview listing customer names only.
+- **Customer Group** filter auto-fills Customer Code and Name; Status, Region and DO Check filters apply on APPLY. 6 records per page.
+- **Status logic**: Pending = no response, or customer verified and awaiting RFM · Exception Raised = customer raised an exception, RFM not yet verified · Verified = RFM verified.
+- **DO Check** per customer: TDS-only difference follows the customer's verification; an exception follows RFM verification or the extension date.
+- **RFM Verify** unlocks once the customer verifies or raises an exception; exceptions need resolution remarks, TDS cases need the certificate checked. Locked once verified.
+- **Extend Date** for one customer, or select several and extend in bulk (REQ-08).
+- **CN/DN tab** (REQ-12/13): PDF / Working dropdown, posting-month or invoice-period filter, group and customer filters, multi-select bulk download, and the Credit Note working with a formula-linked Excel download.
 
 Demo data only. Open `index.html` in a browser.
