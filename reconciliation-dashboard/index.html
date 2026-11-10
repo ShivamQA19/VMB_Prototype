@@ -310,7 +310,7 @@ const NAV = [
 const S = {
   navOpen: false, tab: 'recon', cycle: 'HY1-26', group: null, selected: [], menu: null, search: '',
   dStatus: 'All', dRegion: 'All', dDo: 'All', aStatus: 'All', aRegion: 'All', aDo: 'All',
-  open: {}, pick: {}, page: 0, bodyOpen: true, modal: null, text: '', date: '', agree: false, toast: '', lastSent: ''
+  open: {}, pick: {}, page: 0, bodyOpen: true, sumOpen: true, modal: null, text: '', date: '', agree: false, toast: '', lastSent: ''
 };
 const RESET = { dStatus: 'All', dRegion: 'All', dDo: 'All', aStatus: 'All', aRegion: 'All', aDo: 'All' };
 let toastTimer;
@@ -343,7 +343,7 @@ function regionSummary(cyId) {
 }
 const pct = (r) => (r.t ? ((r.p + r.e) / r.t * 100).toFixed(2) + '%' : '–');
 function summaryTable(cyId, cls) {
-  return `<table class="${cls}"><thead><tr><th>Region</th><th>Pending</th><th>Exception Raised</th><th>Verified</th><th>Total</th><th>% Pending*</th></tr></thead>
+  return `<table class="${cls}"><thead><tr><th>Region</th><th>Pending</th><th>Exception Raised</th><th>Verified</th><th>Total</th><th>% Pending</th></tr></thead>
     <tbody>${regionSummary(cyId).map((r) => `<tr class="${r.reg === 'Total' ? 'tot' : ''}"><td>${r.reg}</td><td class="n">${r.p}</td><td class="n">${r.e}</td><td class="n">${r.v}</td><td class="n">${r.t}</td><td class="n">${pct(r)}</td></tr>`).join('')}</tbody></table>`;
 }
 const todaysExceptions = () => RECS.filter((r) => r.cust && r.cust.t === 'exc' && !r.rfm && day(r.cust.at) === TODAY);
@@ -518,16 +518,12 @@ function reconView() {
 
     <section class="card sumcard">
       <div class="sumhead">
-        <h2>Reconciliation Summary – ${cy.label}</h2>
-        <span class="meta">As on ${TODAY} · all customers · customer mail sent ${cy.mailed} · Verify By ${cy.verifyBy}</span>
-        <div style="margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <span class="meta">${S.lastSent ? 'Last sent ' + S.lastSent + ' (manual)' : 'Auto mail on 15th &amp; 29th · next ' + nextAuto()}</span>
-          <button class="mailbtn" data-act="open" data-m="mail">${sv(I.mail, 16, 2.2)}Send Status Mail</button>
-        </div>
+        <h2>Summary – ${cy.label}</h2>
+        <button class="collapse" data-act="sumtoggle" aria-expanded="${S.sumOpen}" aria-label="${S.sumOpen ? 'Collapse' : 'Expand'} summary">${S.sumOpen ? '–' : '+'}</button>
       </div>
+      ${S.sumOpen ? `
       <div style="overflow-x:auto">${summaryTable(cy.id, 'sumtbl')}</div>
-      <div class="muted small">*% Pending = (Pending + Exception Raised) ÷ Total × 100. Pending includes ${regionSummary(cy.id)[4].aw} customer verification${regionSummary(cy.id)[4].aw === 1 ? '' : 's'} awaiting RFM.</div>
-      ${cy.current && ex.length ? `<div class="alert" role="note"><span style="color:#B3261E">${sv(I.alert, 18, 2.2)}</span><span><b>${ex.length} exception${ex.length === 1 ? '' : 's'} raised today.</b> Alert mail to all RFMs goes out at ${ALERT_TIME}: ${ex.map((r) => esc(r.name)).join(', ')}.</span><button class="lnk" data-act="open" data-m="alert" style="margin-left:auto">Preview mail</button></div>` : ''}
+      ${cy.current && ex.length ? `<div class="alert" role="note"><span style="color:#B3261E">${sv(I.alert, 18, 2.2)}</span><span><b>${ex.length} exception${ex.length === 1 ? '' : 's'} raised today.</b> Alert mail to all RFMs goes out at ${ALERT_TIME}: ${ex.map((r) => esc(r.name)).join(', ')}.</span><button class="lnk" data-act="open" data-m="alert" style="margin-left:auto">Preview mail</button></div>` : ''}` : ''}
     </section>
 
     <section class="card filters">
@@ -661,6 +657,7 @@ document.addEventListener('click', (e) => {
     case 'clear': set(Object.assign({ group: null, selected: [], open: {}, pick: {}, menu: null, search: '', page: 0 }, RESET)); break;
     case 'export': S.menu = null; flash(`Exported ${recs.length} records of ${g ? g.code : ''} (${cyc().label}) to Excel`); break;
     case 'collapse': set({ bodyOpen: !S.bodyOpen }); break;
+    case 'sumtoggle': set({ sumOpen: !S.sumOpen }); break;
     case 'page': set({ page: +el.dataset.n }); break;
     case 'row': { const o = Object.assign({}, S.open); o[el.dataset.key] = !o[el.dataset.key]; set({ open: o }); break; }
     case 'toast': flash(el.dataset.msg); break;

@@ -4,8 +4,7 @@ Supplier-side Ledger Reconciliation for Vedanta Metal Bazaar, under **Reports �
 A switch at the top moves between this view and the customer view.
 
 - **Period-wise dashboards** (REQ-01 / REQ-06): pick HY1 (Apr – Sep) or HY2 (Oct – Mar); everything below follows that period.
-- **Reconciliation Summary** in the same format as the status mail: Region × Pending / Exception Raised / Verified / Total / % Pending.
-- **Send Status Mail** button opens a preview of the REQ-02 mail (sent automatically on the 15th and 29th), with the attachment list including Recon Period.
+- **Summary** (collapsible) in the same format as the status mail: Region × Pending / Exception Raised / Verified / Total / % Pending.
 - **Exception alert**: when customers raise an exception that day, a banner shows the evening mail to all RFMs, with a preview listing customer names only.
 - **Customer Group** filter auto-fills Customer Code and Name; Status, Region and DO Check filters apply on APPLY. 6 records per page.
 - **Status logic**: Pending = no response, or customer verified and awaiting RFM · Exception Raised = customer raised an exception, RFM not yet verified · Verified = RFM verified.
