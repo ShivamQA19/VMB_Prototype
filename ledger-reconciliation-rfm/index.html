@@ -242,6 +242,7 @@ main { flex: 999 1 560px; min-width: 0; padding: 14px 20px 48px; display: flex; 
 .age { font-variant-numeric: tabular-nums; }
 .age.old { color: #B3261E; font-weight: 700; }
 .pill.sm { height: 36px; font-size: 15px; padding: 0 12px; min-width: 150px; }
+.wltbl .pillsub { margin-top: 4px; min-width: 150px; }
 .do.inline { min-width: 0; }
 .rev { height: 38px; padding: 0 18px; border: 0; border-radius: 3px; background: #1565C0; color: #fff; font-weight: 500; font-size: 15px; cursor: pointer; white-space: nowrap; }
 .rev.o { background: #fff; color: #1565C0; border: 1px solid #1565C0; }
@@ -283,7 +284,7 @@ const I = {
   coin: '<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.6-3-1.6-1.7 0-3 .9-3 2.1 0 2.8 6 1.4 6 4.2 0 1.2-1.3 2.1-3 2.1-1.4 0-2.6-.6-3-1.6M12 6.5v11"/>',
   cal: '<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>', truck: '<path d="M2 6h12v10H2zM14 10h4l3 3v3h-7"/><circle cx="6" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/>', bell: '<path d="M6 16V11a6 6 0 1112 0v5l2 2H4z"/><path d="M10 20a2 2 0 004 0"/>',
-  dl: '<path d="M12 3v12M7 10l5 5 5-5M4 19h16"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
+  down: '<path d="M6 9l6 6 6-6"/>', dl: '<path d="M12 3v12M7 10l5 5 5-5M4 19h16"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>', lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
   check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9.5"/>'
 };
 const NAV = [
@@ -292,7 +293,11 @@ const NAV = [
   ['book', 'Learning Center', 0], ['doc', 'Blogs', 0], ['coin', 'Request For Quotation', 0], ['cal', 'Algo Tool', 0], ['truck', 'Dispatch Planning', 0]
 ];
 
-const S = { navOpen: false, tab: 'recon', cycle: 'HY1-26', queue: 'action', region: 'All', q: '', modal: null, text: '', date: '', agree: false, toast: '' };
+const S = { navOpen: false, tab: 'recon', cycle: 'HY1-26', group: null, selected: [], menu: null, search: '',
+  dStatus: 'All', dRegion: 'All', dDo: 'All', aStatus: 'All', aRegion: 'All', aDo: 'All', page: 0,
+  modal: null, text: '', date: '', agree: false, toast: '' };
+const RESET = { dStatus: 'All', dRegion: 'All', dDo: 'All', aStatus: 'All', aRegion: 'All', aDo: 'All', page: 0 };
+const PER_RFM = 10;
 let toastTimer;
 const set = (p) => { Object.assign(S, p); render(); };
 const flash = (m) => { clearTimeout(toastTimer); set({ toast: m }); toastTimer = setTimeout(() => set({ toast: '' }), 3200); };
@@ -310,18 +315,6 @@ CNDN.init({
   rerender: () => render(), flash: (m) => flash(m)
 });
 
-/* queues */
-const isAwait = (r) => !!r.cust && !r.rfm && r.cust.t !== 'exc';
-const isExc = (r) => !!r.cust && !r.rfm && r.cust.t === 'exc';
-const QUEUES = [
-  ['action', 'Action required', (r) => !!r.cust && !r.rfm],
-  ['await', 'Customer verified', (r) => isAwait(r) && r.cust.t === 'ok'],
-  ['tds', 'TDS difference', (r) => isAwait(r) && r.cust.t === 'tds'],
-  ['exc', 'Exceptions', isExc],
-  ['none', 'No response', (r) => !r.cust],
-  ['done', 'Verified', (r) => !!r.rfm],
-  ['all', 'All', () => true]
-];
 const inCycle = () => RECS.filter((r) => r.cy.id === S.cycle);
 
 function custAction(r) {
@@ -342,18 +335,54 @@ function steps(r) {
   return `<div class="steps">${one}<span class="arrow" aria-hidden="true">→</span>${two}</div>`;
 }
 
+const grp = () => GROUPS.find((g) => g.code === S.group) || null;
+const gTitle = (g) => (g.name ? `${g.name} (${g.code})` : g.code);
+const needsAction = (r) => !!r.cust && !r.rfm;
+function derive() {
+  const g = grp();
+  const custs = g ? CUST.filter((c) => c[3] === g.code) : [];
+  const chosen = custs.filter((c) => S.selected.includes(c[0]));
+  const list = inCycle()
+    .filter((r) => !g || chosen.some((c) => c[0] === r.code))
+    .filter((r) => S.aRegion === 'All' || r.region === S.aRegion)
+    .filter((r) => S.aStatus === 'All' || (S.aStatus === 'Awaiting RFM' ? awaitingRfm(r) : status(r) === S.aStatus))
+    .filter((r) => S.aDo === 'All' || (S.aDo === 'Allowed') === doCheck(r).ok)
+    .sort((a, b) => (needsAction(b) - needsAction(a)) || ((ageDays(b) ?? -1) - (ageDays(a) ?? -1)));
+  const nPages = Math.max(1, Math.ceil(list.length / PER_RFM));
+  const page = Math.min(S.page, nPages - 1);
+  return { g, custs, chosen, list, nPages, page };
+}
+/* tiles set the same filters as the filter bar */
+const TILES = [
+  ['t-await', 'Awaiting your verification', { aStatus: 'Awaiting RFM', aDo: 'All' }],
+  ['t-exc', 'Exceptions to resolve', { aStatus: 'Exception Raised', aDo: 'All' }],
+  ['t-block', 'DO blocked', { aStatus: 'All', aDo: 'Blocked' }],
+  ['t-done', 'Verified', { aStatus: 'Verified', aDo: 'All' }]
+];
+
 function worklist() {
   const cy = cyc();
   const all = inCycle();
-  const counts = Object.fromEntries(QUEUES.map(([id, , f]) => [id, all.filter(f).length]));
-  const blocked = all.filter((r) => !doCheck(r).ok).length;
-  const qf = QUEUES.find((x) => x[0] === S.queue)[2];
-  const q = S.q.trim().toLowerCase();
-  const list = all.filter(qf)
-    .filter((r) => S.region === 'All' || r.region === S.region)
-    .filter((r) => !q || r.code.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || groupName(r.group).toLowerCase().includes(q))
-    .sort((a, b) => (ageDays(b) ?? -1) - (ageDays(a) ?? -1));
-  const sel = (v, c) => (v === c ? ' selected' : '');
+  const n = {
+    await: all.filter(awaitingRfm).length, tds: all.filter((r) => awaitingRfm(r) && r.cust.t === 'tds').length,
+    exc: all.filter((r) => status(r) === 'Exception Raised').length, block: all.filter((r) => !doCheck(r).ok).length,
+    blockExc: all.filter((r) => !doCheck(r).ok && r.cust).length, done: all.filter((r) => r.rfm).length
+  };
+  const tileSub = ['' + n.tds + ' with TDS difference', 'DO blocked unless extended', `${n.blockExc} exception${n.blockExc === 1 ? '' : 's'} · ${n.block - n.blockExc} no response`, `of ${all.length} in ${cy.label}`];
+  const tileVal = [n.await, n.exc, n.block, n.done];
+  const { g, custs, chosen, list, nPages, page } = derive();
+  const q = S.search.trim().toLowerCase();
+  const first = chosen[0];
+  const more = chosen.length > 1 ? `<span>+${chosen.length - 1}</span>` : '';
+  const allOn = custs.length > 0 && chosen.length === custs.length;
+  const sel = (v, cur) => (v === cur ? ' selected' : '');
+  const dis = !g ? ' disabled title="Select a Customer Group first"' : '';
+  const groupOpts = GROUPS.filter((x) => !q || x.code.toLowerCase().includes(q) || x.name.toLowerCase().includes(q));
+  const checkList = (field) => `
+    <label class="chk all"><input type="checkbox" data-act="all"${allOn ? ' checked' : ''}>Select all</label>
+    ${custs.map((c) => `<label class="chk"><input type="checkbox" data-act="cust" data-code="${esc(c[0])}"${S.selected.includes(c[0]) ? ' checked' : ''}>${esc(field === 'code' ? c[0] : c[1])}</label>`).join('')}`;
+  const from = list.length ? page * PER_RFM + 1 : 0, to = Math.min(list.length, page * PER_RFM + PER_RFM);
+  const tileOn = (f) => S.aStatus === f.aStatus && S.aDo === f.aDo && (f.aStatus !== 'All' || f.aDo !== 'All');
 
   return `
     <div class="pagehead"><h1>Ledger Reconciliation – RFM Verification</h1><span>Verify customer confirmations and resolve exceptions. Each verification locks the reconciliation.</span></div>
@@ -362,23 +391,60 @@ function worklist() {
     </div>
 
     <div class="tiles">
-      <button class="tile t-await${S.queue === 'action' ? ' on' : ''}" data-act="queue" data-q="action"><span>Awaiting your verification</span><b>${counts.await + counts.tds}</b><small>${counts.tds} with TDS difference</small></button>
-      <button class="tile t-exc${S.queue === 'exc' ? ' on' : ''}" data-act="queue" data-q="exc"><span>Exceptions to resolve</span><b>${counts.exc}</b><small>DO blocked unless extended</small></button>
-      <button class="tile t-block${S.queue === 'none' ? ' on' : ''}" data-act="queue" data-q="none"><span>No customer response</span><b>${counts.none}</b><small>${blocked} customer${blocked === 1 ? '' : 's'} with DO blocked</small></button>
-      <button class="tile t-done${S.queue === 'done' ? ' on' : ''}" data-act="queue" data-q="done"><span>Verified</span><b>${counts.done}</b><small>of ${all.length} in ${cy.label}</small></button>
+      ${TILES.map(([cls, label, f], i) => `<button class="tile ${cls}${tileOn(f) ? ' on' : ''}" data-act="tile" data-i="${i}" aria-pressed="${tileOn(f)}"><span>${label}</span><b>${tileVal[i]}</b><small>${tileSub[i]}</small></button>`).join('')}
     </div>
 
+    <section class="card filters">
+      <div class="fld" style="width:185px">
+        <label>Customer Group</label>
+        <button class="ctl${S.menu === 'group' ? ' active' : ''}" data-act="menu" data-m="group" aria-haspopup="listbox" aria-expanded="${S.menu === 'group'}"><span class="val">${g ? esc(gTitle(g)) : 'All groups'}</span>${sv(I.down, 14, 2.5)}</button>
+        ${S.menu === 'group' ? `<div class="pop" style="width:320px">
+          <div class="srch"><input id="gsearch" type="text" value="${esc(S.search)}" placeholder="Search group name or code" aria-label="Search customer group"></div>
+          <div class="scroll" role="listbox">
+            <button class="opt${!S.group ? ' sel' : ''}" data-act="pick-group" data-code="" role="option"><span style="flex:1">All groups</span><small>${CUST.length} customers</small></button>
+            ${groupOpts.map((x) => { const k = CUST.filter((c) => c[3] === x.code).length; return `<button class="opt${x.code === S.group ? ' sel' : ''}" data-act="pick-group" data-code="${esc(x.code)}" role="option"><span style="flex:1">${esc(gTitle(x))}</span><small>${k} customer${k === 1 ? '' : 's'}</small></button>`; }).join('')}
+            ${groupOpts.length ? '' : `<div style="padding:14px 12px;font-size:13px;color:#5F6368">No group matches “${esc(S.search)}”</div>`}
+          </div></div>` : ''}
+      </div>
+      <div class="fld" style="width:140px">
+        <label>Customer Code</label>
+        <button class="ctl${S.menu === 'code' ? ' active' : ''}" data-act="menu" data-m="code"${dis}><span class="val">${!g ? 'Customer Code' : first ? esc(first[0]) : 'None selected'}</span>${g ? more : ''}${sv(I.down, 14, 2.5)}</button>
+        ${S.menu === 'code' ? `<div class="pop" style="width:220px"><div class="scroll">${checkList('code')}</div></div>` : ''}
+      </div>
+      <div class="fld" style="width:160px">
+        <label>Customer Name</label>
+        <button class="ctl${S.menu === 'name' ? ' active' : ''}" data-act="menu" data-m="name"${dis}><span class="val">${!g ? 'Customer Name' : first ? esc(first[1]) : 'None selected'}</span>${g ? more : ''}${sv(I.down, 14, 2.5)}</button>
+        ${S.menu === 'name' ? `<div class="pop" style="width:340px"><div class="scroll">${checkList('name')}</div></div>` : ''}
+      </div>
+      <div class="fld" style="width:150px"><label for="fStatus">Status</label>
+        <select id="fStatus" class="ctl" data-f="dStatus">${['All', 'Pending', 'Awaiting RFM', 'Exception Raised', 'Verified'].map((v) => `<option${sel(v, S.dStatus)}>${v}</option>`).join('')}</select></div>
+      <div class="fld" style="width:105px"><label for="fRegion">Region</label>
+        <select id="fRegion" class="ctl" data-f="dRegion">${['All'].concat(REGIONS).map((v) => `<option${sel(v, S.dRegion)}>${v}</option>`).join('')}</select></div>
+      <div class="fld" style="width:115px"><label for="fDo">DO Check</label>
+        <select id="fDo" class="ctl" data-f="dDo">${['All', 'Allowed', 'Blocked'].map((v) => `<option${sel(v, S.dDo)}>${v}</option>`).join('')}</select></div>
+      <div class="actions">
+        <button class="apply" data-act="apply">APPLY</button>
+        <button class="txtbtn" data-act="clear">Clear All</button>
+        <button class="txtbtn" style="color:#1565C0" data-act="export">${sv(I.dl, 16, 2.4)}Export Data</button>
+      </div>
+    </section>
+
     <section class="card wl">
-      <div class="wlbar">
-        <div class="seg" role="group" aria-label="Worklist">${QUEUES.map(([id, label]) => `<button class="${S.queue === id ? 'on' : ''}" data-act="queue" data-q="${id}" aria-pressed="${S.queue === id}">${label}<small>${counts[id]}</small></button>`).join('')}</div>
-        <div class="fld"><label for="rg" style="font-size:12px;color:#3C4043">Region</label><select id="rg" class="ctl" data-f="region" style="width:120px">${['All'].concat(REGIONS).map((v) => `<option${sel(v, S.region)}>${v}</option>`).join('')}</select></div>
-        <div class="fld" style="margin-left:auto"><label for="wq" style="font-size:12px;color:#3C4043">Search</label><input id="wq" class="wlsearch" type="search" placeholder="Customer, code or group" value="${esc(S.q)}"></div>
+      <div class="wlbar" style="justify-content:space-between;align-items:center">
+        <span style="font-size:15px;font-weight:500">${g ? esc(g.name || g.code) + ' · ' : ''}${cy.label}</span>
+        <div class="pager" style="margin-left:0">
+          <b>Showing ${from} - ${to} of ${list.length}</b>
+          <span style="width:1px;height:18px;background:#DADCE0;margin:0 4px"></span>
+          <button class="pg" data-act="page" data-n="0"${page === 0 ? ' disabled' : ''}>FIRST</button>
+          ${Array.from({ length: nPages }, (_, i) => `<button class="pg${i === page ? ' on' : ''}" data-act="page" data-n="${i}">${i + 1}</button>`).join('')}
+          <button class="pg last" data-act="page" data-n="${nPages - 1}"${page === nPages - 1 ? ' disabled' : ''}>LAST</button>
+        </div>
       </div>
       <div style="overflow-x:auto">${list.length ? `<table class="wltbl">
         <thead><tr><th>Customer</th><th>Region</th><th>Customer Action</th><th class="num">Closing Balance</th><th class="num">TDS Difference</th><th>DO Check</th><th class="num">Waiting</th><th>Status</th><th></th></tr></thead>
-        <tbody>${list.map((r) => {
+        <tbody>${list.slice(page * PER_RFM, page * PER_RFM + PER_RFM).map((r) => {
           const dc = doCheck(r), st = status(r), a = ageDays(r);
-          const act = r.cust && !r.rfm;
+          const act = needsAction(r);
           return `<tr>
             <td><div class="cname">${esc(r.name)}</div><div class="csub">${esc(r.code)} · ${esc(groupName(r.group))}</div></td>
             <td>${r.region}</td>
@@ -387,11 +453,11 @@ function worklist() {
             <td class="num">${r.cust && r.cust.t === 'tds' ? inr(r.cust.tdsAmt) : '—'}</td>
             <td><div class="do inline"><b class="${dc.ok ? 'ok' : 'no'}">${dc.ok ? 'Allowed' : 'Blocked'}</b><small>${dc.why}</small></div></td>
             <td class="num"><span class="age${a !== null && a > 7 && act ? ' old' : ''}">${a === null ? '—' : a + (a === 1 ? ' day' : ' days')}</span></td>
-            <td><span class="pill sm ${PILL[st]}">${st}</span></td>
+            <td><span class="pill sm ${PILL[st]}">${st}</span>${awaitingRfm(r) ? '<div class="pillsub">Awaiting RFM</div>' : ''}</td>
             <td><button class="rev${act ? '' : ' o'}" data-act="review" data-key="${esc(r.key)}">${act ? 'Review' : 'View'}</button></td>
           </tr>`;
         }).join('')}</tbody></table>`
-        : `<div class="wlempty">${sv(I.check, 40, 1.6)}<b>Nothing here</b><span>No customers match this list for ${cy.label}.</span></div>`}</div>
+        : `<div class="wlempty">${sv(I.check, 40, 1.6)}<b>Nothing here</b><span>No customers match the selected filters for ${cy.label}.</span></div>`}</div>
     </section>`;
 }
 
@@ -465,7 +531,7 @@ function modalHtml() {
 }
 
 function render() {
-  const activeId = document.activeElement && ['txt', 'wq'].includes(document.activeElement.id) ? document.activeElement.id : null;
+  const activeId = document.activeElement && ['txt'].includes(document.activeElement.id) ? document.activeElement.id : null;
   const caret = activeId ? document.activeElement.selectionStart : null;
   const bodyScroll = document.querySelector('.modal .body') ? document.querySelector('.modal .body').scrollTop : 0;
   document.getElementById('app').innerHTML = `
@@ -497,22 +563,34 @@ function render() {
   ${modalHtml()}
   ${S.toast ? `<div class="toast" role="status">${esc(S.toast)}</div>` : ''}`;
   const mb = document.querySelector('.modal .body'); if (mb && bodyScroll) mb.scrollTop = bodyScroll;
+  if (S.menu === 'group') { const inp = document.getElementById('gsearch'); if (inp) { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); } }
   if (activeId) { const t = document.getElementById(activeId); if (t) { t.focus(); try { t.setSelectionRange(caret, caret); } catch (e) { /* search inputs may not support selection */ } } }
 }
 
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-act]');
-  if (!el) return;
+  if (!el) { if (S.menu && !e.target.closest('.pop')) set({ menu: null }); return; }
   if (CNDN.click(el)) return;
   const act = el.dataset.act;
+  if (['cust', 'all'].includes(act)) return;
   if (act === 'close-bg' && e.target !== el) return;
   switch (act) {
     case 'nav': set({ navOpen: !S.navOpen }); break;
     case 'reset': ReconStore.reset(); location.reload(); break;
     case 'soon': flash('Existing screen – not part of this prototype'); break;
     case 'tab': set({ tab: el.dataset.t }); break;
-    case 'cycle': set({ cycle: el.dataset.id }); break;
-    case 'queue': set({ queue: el.dataset.q }); break;
+    case 'cycle': set({ cycle: el.dataset.id, page: 0 }); break;
+    case 'tile': { const f = TILES[+el.dataset.i][2]; set(Object.assign({ page: 0, dStatus: f.aStatus, dDo: f.aDo }, f)); break; }
+    case 'menu': set({ menu: S.menu === el.dataset.m ? null : el.dataset.m }); break;
+    case 'pick-group': {
+      const code = el.dataset.code || null;
+      set(Object.assign({}, RESET, { group: code, selected: code ? CUST.filter((c) => c[3] === code).map((c) => c[0]) : [], menu: null, search: '' }));
+      break;
+    }
+    case 'apply': set({ aStatus: S.dStatus, aRegion: S.dRegion, aDo: S.dDo, page: 0, menu: null }); break;
+    case 'clear': set(Object.assign({}, RESET, { group: null, selected: [], menu: null, search: '' })); break;
+    case 'export': { S.menu = null; flash(`Exported ${derive().list.length} records (${cyc().label}) to Excel`); break; }
+    case 'page': set({ page: +el.dataset.n }); break;
     case 'toast': flash(el.dataset.msg); break;
     case 'review': set({ modal: { m: 'review', key: el.dataset.key }, text: '', date: '', agree: false }); break;
     case 'sub': set({ modal: { m: el.dataset.m, key: S.modal.key }, text: '', date: '' }); break;
@@ -543,15 +621,23 @@ document.addEventListener('click', (e) => {
 document.addEventListener('change', (e) => {
   const el = e.target;
   if (CNDN.change(el)) return;
-  if (el.dataset.f) { set({ [el.dataset.f]: el.value }); return; }
+  if (el.dataset.f) { S[el.dataset.f] = el.value; return; }
+  if (el.dataset.act === 'cust') {
+    const code = el.dataset.code;
+    set({ page: 0, selected: S.selected.includes(code) ? S.selected.filter((x) => x !== code) : S.selected.concat([code]) }); return;
+  }
+  if (el.dataset.act === 'all') {
+    const { custs, chosen } = derive();
+    set({ page: 0, selected: chosen.length === custs.length ? [] : custs.map((c) => c[0]) }); return;
+  }
   if (el.id === 'agree') { set({ agree: el.checked }); return; }
   if (el.id === 'dt') { set({ date: el.value }); return; }
 });
 document.addEventListener('input', (e) => {
   if (e.target.id === 'txt') set({ text: e.target.value });
-  if (e.target.id === 'wq') set({ q: e.target.value });
+  if (e.target.id === 'gsearch') set({ search: e.target.value });
 });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && S.modal) set({ modal: null }); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (S.modal) set({ modal: null }); else if (S.menu) set({ menu: null }); } });
 ReconStore.onChange((cleared) => { if (cleared) location.reload(); else { applyStore(); render(); } });
 
 render();

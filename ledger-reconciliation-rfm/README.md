@@ -2,8 +2,9 @@
 
 RFM (Relationship / Finance Manager) view of Ledger Reconciliation for Vedanta Metal Bazaar. It completes the two-party flow in REQ-03: the customer verifies or raises an exception, then the RFM verifies.
 
-- **Worklist** for the selected period (HY1 / HY2) with tiles: Awaiting your verification, Exceptions to resolve, No customer response, Verified.
-- **Lists**: Action required, Customer verified, TDS difference, Exceptions, No response, Verified, All, plus Region and search. Oldest waiting items come first; items waiting over 7 days are highlighted.
+- **Worklist** for the selected period (HY1 / HY2) with tiles: Awaiting your verification, Exceptions to resolve, DO blocked, Verified. Clicking a tile applies that filter.
+- **Same filter bar as the supplier view**: Customer Group (searchable; fills Customer Code and Name with the group's customers), Customer Code, Customer Name, Status, Region and DO Check, with APPLY, Clear All and Export Data. With no group picked, the worklist shows all customers.
+- Items needing action come first, oldest first; items waiting over 7 days are highlighted. 10 records per page.
 - Each row shows the customer action, closing balance, TDS difference, **DO Check**, days waiting and status.
 - **Review & Verify** popup: period details, DO Check, TDS status, documents (ledger, Balance Confirmation, customer file, TDS certificate), remarks, and the two-step tracker.
   - TDS difference: the RFM ticks that the certificate was checked.
