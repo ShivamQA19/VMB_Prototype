@@ -21,24 +21,42 @@
   .cn-note { font-size: 12.5px; color: #5F6368; padding: 0 16px 12px; }
   .cn-tbl { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 1040px; table-layout: fixed; }
   .cn-tbl > thead > tr > th:first-child { width: 44px; }
-  .cn-tbl > thead > tr > th { background: #EEF0F3; text-align: left; font-weight: 700; padding: 11px 12px; }
+  .cn-tbl > thead > tr > th { background: #EEF0F3; text-align: left; font-weight: 700; padding: 12px; font-size: 15px; }
   .cn-tbl > thead > tr > th { white-space: normal; vertical-align: bottom; }
-  .cn-tbl > tbody > tr > td { padding: 11px 12px; border-bottom: 1px solid #ECEEF1; vertical-align: middle; overflow-wrap: anywhere; }
+  .cn-tbl > tbody > tr > td { padding: 12px; border-bottom: 1px solid #ECEEF1; vertical-align: middle; overflow-wrap: anywhere; }
   .cn-tbl > tbody > tr > td.num, .cn-tbl > thead > tr > th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .cn-tbl input[type=checkbox] { width: 16px; height: 16px; accent-color: #1565C0; margin: 0; }
   .cn-wrap { overflow-x: auto; border-top: 1px solid #E3E5E8; }
-  .cn-type { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 11px; font-size: 12px; font-weight: 700; }
+  .cn-type { display: inline-flex; align-items: center; justify-content: center; height: 26px; min-width: 44px; padding: 0 10px; border-radius: 13px; font-size: 13px; font-weight: 700; }
   .cn-CN { background: #E8F5E9; color: #2E7D32; }
   .cn-DN { background: #FFF3E0; color: #8A4B00; }
   .cn-sig { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: #2E7D32; }
-  .cn-empty { padding: 30px 16px; color: #5F6368; font-size: 14px; }
+  .cn-empty { padding: 44px 16px; color: #5F6368; font-size: 15px; text-align: center; border-top: 1px solid #E3E5E8; }
   .cn-filters { margin-bottom: 14px; }
   .cn-listbar { padding: 14px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
-  .cn-listbar h2 { margin: 0; font-size: 17px; }
-  .cn-listbar .meta { font-size: 13px; color: #5F6368; }
+  .cn-listbar h2 { margin: 0; font-size: 18px; }
+  .cn-listbar .meta { font-size: 14px; color: #5F6368; }
+  .cn-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid #E3E5E8; }
+  .cn-stat { padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; border-right: 1px solid #E3E5E8; }
+  .cn-stat:last-child { border-right: 0; }
+  .cn-stat span { font-size: 13px; color: #3C4043; display: inline-flex; align-items: center; gap: 8px; }
+  .cn-stat b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .cn-stat small { font-size: 12.5px; color: #5F6368; }
+  .cn-selbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 10px 16px; background: #E3EEFA; border-top: 1px solid #C7DEF4; font-size: 15px; color: #0D47A1; }
+  .cn-selbar b { font-weight: 700; }
+  .cn-selbar button { border: 0; background: none; color: #1565C0; font-weight: 500; font-size: 15px; cursor: pointer; padding: 0; text-decoration: underline; }
+  .cn-tbl > tbody > tr:hover > td { background: #FAFBFD; }
+  .cn-tbl > tbody > tr.on > td { background: #F1F6FD; }
+  .cn-main { font-weight: 500; }
+  .cn-sub { font-size: 12.5px; color: #5F6368; margin-top: 3px; }
+  .cn-doc { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .cn-pdf { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border: 1px solid #1565C0; border-radius: 3px; background: #fff; color: #1565C0; font-weight: 500; font-size: 14px; cursor: pointer; }
+  .cn-pdf:hover { background: #F1F6FD; }
+  .cn-pager { display: flex; align-items: center; justify-content: flex-end; gap: 6px; padding: 12px 16px; border-top: 1px solid #E3E5E8; font-size: 13px; }
   .cn-start { padding: 56px 24px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
   .cn-start h3 { margin: 0; font-size: 16px; font-weight: 500; }
   .cn-start p { margin: 0; font-size: 14px; color: #5F6368; max-width: 470px; }
+  @media (max-width: 900px) { .cn-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } .cn-stat:nth-child(2) { border-right: 0; } }
   `;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
 
@@ -66,8 +84,9 @@
 
   let CFG = null;
   let DOCS = [];
-  const RESET = { dType: 'All', dMonth: 'All', aType: 'All', aMonth: 'All' };
-  const S = Object.assign({ group: null, selected: [], menu: null, search: '', sel: {} }, RESET);
+  const RESET = { dType: 'All', dMonth: 'All', aType: 'All', aMonth: 'All', page: 0 };
+  const S = Object.assign({ group: null, selected: [], menu: null, search: '', sel: {}, page: 0 }, RESET);
+  const PER = 10;
   const svDown = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   const svDl16 = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>';
   const svPeople = '<svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.4"/><path d="M3 19c.6-3.2 3-5 6-5s5.4 1.8 6 5M14.5 15.2c.8-.5 1.6-.7 2.5-.7 2.2 0 3.8 1.4 4.3 3.9"/></svg>';
@@ -113,7 +132,9 @@
         const docNo = (type === 'CN' ? '16000' : '17000') + String(4412 + ci * 17 + k * 5).padStart(5, '0');
         const pm = MONTHS[Math.min(MONTHS.length - 1, mIdx + 1)];
         const pday = String(2 + ((h + k) % 25)).padStart(2, '0');
-        const taxable = Math.abs(diff), gst = +(taxable * 0.18).toFixed(2);
+        let taxable = Math.abs(diff);
+        if (taxable < 5000) taxable = +(8500 + ((h * 37 + k * 911) % 46000) + (h % 100) / 100).toFixed(2); // keep demo amounts realistic
+        const gst = +(taxable * 0.18).toFixed(2);
         DOCS.push({ id: docNo, type, docNo, postDate: `${pday}-${pm.slice(0, 3)}-2026`, month: pm, cust: c, gstInv, billDoc, mou, taxable, gst, amount: +(taxable + gst).toFixed(2) });
       }
     });
@@ -197,26 +218,51 @@
         <p>Customer Code and Customer Name fill automatically with every customer in the group, and their CN/DN documents load below.</p></section>`;
     }
     const list = listDocs();
-    const n = list.filter((d) => S.sel[d.id]).length;
-    const all = list.length > 0 && n === list.length;
+    const picked = list.filter((d) => S.sel[d.id]);
+    const n = picked.length;
+    const nPages = Math.max(1, Math.ceil(list.length / PER));
+    const page = Math.min(S.page, nPages - 1);
+    const rows = list.slice(page * PER, page * PER + PER);
+    const pageAll = rows.length > 0 && rows.every((d) => S.sel[d.id]);
     const g = grp();
+    const cn = list.filter((d) => d.type === 'CN'), dn = list.filter((d) => d.type === 'DN');
+    const sum = (a) => a.reduce((t, d) => t + d.amount, 0);
+    const net = sum(dn) - sum(cn);
+    const from = list.length ? page * PER + 1 : 0, to = Math.min(list.length, page * PER + PER);
+    const sup = isSup();
     return `<section class="card" style="padding:0;overflow:hidden">
     <div class="cn-listbar"><h2>CN/DN</h2>
-      <span class="meta">${isSup() ? (g ? esc(g.name || g.code) : 'All groups') + ' · ' : ''}Digitally signed documents – select CN/DNs to download them as one ZIP, or download their working.</span>
-      <div class="cn-right"><span style="font-size:15px;font-weight:700">${list.length} document${list.length === 1 ? '' : 's'}</span>
+      <span class="meta">${sup ? (g ? esc(g.name || g.code) : 'All groups') + ' · ' : ''}Digitally signed Credit and Debit Notes</span>
+      <div class="cn-right">
         <button class="cn-icon" data-act="cn-working"${n ? '' : ' disabled'} aria-label="Download Working" title="${n ? 'Download Working for the selected CN/DNs' : 'Download Working – select CN/DNs first'}">${svWork}</button>
         <button class="cn-bulk" data-act="cn-bulkpdf"${n ? '' : ' disabled'}>${svDl}Download Selected (${n})</button></div>
     </div>
-    <div class="cn-wrap">${list.length ? `<table class="cn-tbl">
-      <thead><tr><th><input type="checkbox" data-cn="all-pdf" aria-label="Select all"${all ? ' checked' : ''}></th><th>CN/DN No.</th><th>Type</th><th>Posting Date</th>${isSup() ? '<th>Customer</th>' : ''}<th>GST Inv No.</th><th>Bill Doc. No.</th><th>MoU No.</th><th class="num">Taxable (₹)</th><th class="num">GST (₹)</th><th class="num">Total (₹)</th><th>Signed PDF</th></tr></thead>
-      <tbody>${list.map((d) => `<tr>
+    <div class="cn-stats">
+      <div class="cn-stat"><span>Documents</span><b>${list.length}</b><small>${S.aMonth === 'All' ? 'All posting months' : S.aMonth}</small></div>
+      <div class="cn-stat"><span><span class="cn-type cn-CN">CN</span>Credit Notes</span><b>₹ ${inr(sum(cn))}</b><small>${cn.length} document${cn.length === 1 ? '' : 's'}</small></div>
+      <div class="cn-stat"><span><span class="cn-type cn-DN">DN</span>Debit Notes</span><b>₹ ${inr(sum(dn))}</b><small>${dn.length} document${dn.length === 1 ? '' : 's'}</small></div>
+      <div class="cn-stat"><span>Net (DN − CN)</span><b style="color:${net > 0 ? '#8A4B00' : net < 0 ? '#2E7D32' : '#1F1F1F'}">₹ ${inr(Math.abs(net))}</b><small>${net > 0 ? 'Payable by customer' : net < 0 ? 'Credit to customer' : 'No net amount'}</small></div>
+    </div>
+    ${n ? `<div class="cn-selbar" role="status"><span><b>${n}</b> selected · Total <b>₹ ${inr(sum(picked))}</b></span><button data-act="cn-clearsel">Clear selection</button></div>` : ''}
+    ${list.length ? `<div class="cn-wrap"${n ? ' style="border-top:0"' : ''}><table class="cn-tbl">
+      <colgroup><col style="width:44px"><col style="width:${sup ? 140 : 170}px"><col style="width:${sup ? 125 : 140}px">${sup ? '<col>' : ''}<col style="width:${sup ? 170 : 230}px"><col style="width:120px"><col style="width:130px"><col style="width:115px"><col style="width:140px"><col style="width:${sup ? 170 : 200}px"></colgroup>
+      <thead><tr><th><input type="checkbox" data-cn="all-pdf" aria-label="Select all on this page"${pageAll ? ' checked' : ''}></th><th>CN/DN No.</th><th>Posting Date</th>${sup ? '<th>Customer</th>' : ''}<th>Invoice</th><th>MoU No.</th><th class="num">Taxable (₹)</th><th class="num">GST (₹)</th><th class="num">Total (₹)</th><th>Signed PDF</th></tr></thead>
+      <tbody>${rows.map((d) => `<tr class="${S.sel[d.id] ? 'on' : ''}">
         <td><input type="checkbox" data-cn="pick" data-id="${d.id}" aria-label="Select ${d.docNo}"${S.sel[d.id] ? ' checked' : ''}></td>
-        <td><b style="font-weight:500">${d.docNo}</b></td><td><span class="cn-type cn-${d.type}">${d.type}</span></td><td>${d.postDate}</td>
-        ${isSup() ? `<td>${esc(d.cust.code)} – ${esc(d.cust.name)}</td>` : ''}
-        <td>${d.gstInv}</td><td>${d.billDoc}</td><td>${d.mou}</td>
-        <td class="num">${inr(d.taxable)}</td><td class="num">${inr(d.gst)}</td><td class="num"><b style="font-weight:500">${inr(d.amount)}</b></td>
-        <td><button class="lnk" data-act="cn-pdf" data-id="${d.id}">${svDl}PDF</button> <span class="cn-sig">${svOk}Digitally signed</span></td></tr>`).join('')}</tbody></table>`
-      : '<div class="cn-empty">No CN/DN documents for the selected filters.</div>'}</div>
+        <td><div class="cn-main">${d.docNo}</div><div class="cn-sub"><span class="cn-type cn-${d.type}" style="height:20px;min-width:36px;font-size:11.5px">${d.type === 'CN' ? 'Credit' : 'Debit'}</span></div></td>
+        <td>${d.postDate}</td>
+        ${sup ? `<td><div class="cn-main">${esc(d.cust.name)}</div><div class="cn-sub">${esc(d.cust.code)}</div></td>` : ''}
+        <td><div>${d.gstInv}</div><div class="cn-sub">Bill Doc ${d.billDoc}</div></td>
+        <td>${d.mou}</td>
+        <td class="num">${inr(d.taxable)}</td><td class="num">${inr(d.gst)}</td><td class="num"><b style="font-weight:700">${inr(d.amount)}</b></td>
+        <td><div class="cn-doc"><button class="cn-pdf" data-act="cn-pdf" data-id="${d.id}" aria-label="Download PDF ${d.docNo}">${svDl}PDF</button><span class="cn-sig">${svOk}Signed</span></div></td></tr>`).join('')}</tbody></table></div>
+    <div class="cn-pager"><b>Showing ${from} - ${to} of ${list.length}</b>
+      <span style="width:1px;height:18px;background:#DADCE0;margin:0 4px"></span>
+      <button class="pg" data-act="cn-page" data-n="0"${page === 0 ? ' disabled' : ''}>FIRST</button>
+      ${Array.from({ length: nPages }, (_, i) => `<button class="pg${i === page ? ' on' : ''}" data-act="cn-page" data-n="${i}">${i + 1}</button>`).join('')}
+      <button class="pg last" data-act="cn-page" data-n="${nPages - 1}"${page === nPages - 1 ? ' disabled' : ''}>LAST</button>
+    </div>`
+      : '<div class="cn-empty">No CN/DN documents for the selected filters.</div>'}
     </section>`;
   }
 
@@ -240,7 +286,9 @@
       else if (a === 'cn-pick') {
         const code = el.dataset.code || null;
         Object.assign(S, RESET, { group: code, selected: code ? CFG.customers.filter((c) => c.group === code).map((c) => c.code) : [], menu: null, search: '', sel: {} });
-      } else if (a === 'cn-apply') { Object.assign(S, { aType: S.dType, aMonth: S.dMonth, menu: null, sel: {} }); }
+      } else if (a === 'cn-page') { S.page = +el.dataset.n; }
+      else if (a === 'cn-clearsel') { S.sel = {}; }
+      else if (a === 'cn-apply') { Object.assign(S, { aType: S.dType, aMonth: S.dMonth, menu: null, sel: {}, page: 0 }); }
       else if (a === 'cn-clear') { Object.assign(S, RESET, { group: null, selected: [], menu: null, search: '', sel: {} }); }
       rerender();
       return true;
@@ -248,10 +296,10 @@
     change(el) {
       const k = el.dataset.cn; if (!k) return false;
       if (k === 'dType' || k === 'dMonth') { S[k] = el.value; return true; }
-      if (k === 'cust') { const c = el.dataset.code; S.selected = S.selected.includes(c) ? S.selected.filter((x) => x !== c) : S.selected.concat([c]); S.sel = {}; }
-      else if (k === 'allc') { const cs = groupCusts(); S.selected = S.selected.length === cs.length ? [] : cs.map((c) => c.code); S.sel = {}; }
+      if (k === 'cust') { const c = el.dataset.code; S.selected = S.selected.includes(c) ? S.selected.filter((x) => x !== c) : S.selected.concat([c]); S.sel = {}; S.page = 0; }
+      else if (k === 'allc') { const cs = groupCusts(); S.selected = S.selected.length === cs.length ? [] : cs.map((c) => c.code); S.sel = {}; S.page = 0; }
       else if (k === 'pick') { S.sel[el.dataset.id] = el.checked; }
-      else if (k === 'all-pdf') { listDocs().forEach((d) => { S.sel[d.id] = el.checked; }); }
+      else if (k === 'all-pdf') { const l = listDocs(); const pg = Math.min(S.page, Math.max(0, Math.ceil(l.length / PER) - 1)); l.slice(pg * PER, pg * PER + PER).forEach((d) => { S.sel[d.id] = el.checked; }); }
       rerender();
       return true;
     }
