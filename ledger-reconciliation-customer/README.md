@@ -1,7 +1,7 @@
 # Ledger Reconciliation – Customer View Prototype
 
 Customer-side Ledger Reconciliation for Vedanta Metal Bazaar, shown for customer **MAHAVEER (777)**.
-A switch at the top moves between this view and the supplier (HZL Console) view.
+A switch at the top moves between the Supplier, RFM and Customer views. All three share demo state in the browser, so a verification here appears in the RFM worklist; **Reset demo** restores the original data.
 
 - **Half-yearly periods** (REQ-06): HY1 (Apr – Sep) and HY2 (Oct – Mar), each with Opening and Closing Balance and status.
 - The expanded row keeps the existing columns (Ledger Report, Verify By, Uploaded File, Verified Customer's File, Remarks, Action) and adds TDS Status. Verify By also shows the date the request was emailed (5th of the following month, REQ-04).

@@ -1,7 +1,7 @@
 # Ledger Reconciliation – Supplier (HZL Console) Prototype
 
 Supplier-side Ledger Reconciliation for Vedanta Metal Bazaar, under **Reports → Financial → Ledger Reconciliation**.
-A switch at the top moves between this view and the customer view.
+A switch at the top moves between the Supplier, RFM and Customer views. All three share demo state in the browser, so an action in one shows in the others; **Reset demo** restores the original data.
 
 - **Period-wise dashboards** (REQ-01 / REQ-06): pick HY1 (Apr – Sep) or HY2 (Oct – Mar); everything below follows that period.
 - **Summary** (collapsible) in the same format as the status mail: Region × Pending / Exception Raised / Verified / Total / % Pending.
