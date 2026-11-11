@@ -248,8 +248,8 @@
     </div>
     ${n ? `<div class="cn-selbar" role="status"><span><b>${n}</b> selected · Total <b>₹ ${inr(sum(picked))}</b></span><button data-act="cn-clearsel">Clear selection</button></div>` : ''}
     ${list.length ? `<div class="cn-wrap"${n ? ' style="border-top:0"' : ''}><table class="cn-tbl">
-      <colgroup><col style="width:44px"><col style="width:${sup ? 140 : 170}px"><col style="width:${sup ? 125 : 140}px">${sup ? '<col>' : ''}<col style="width:${sup ? 170 : 230}px"><col style="width:120px"><col style="width:130px"><col style="width:115px"><col style="width:140px"><col style="width:${sup ? 200 : 220}px"></colgroup>
-      <thead><tr><th><input type="checkbox" data-cn="all-pdf" aria-label="Select all on this page"${pageAll ? ' checked' : ''}></th><th>CN/DN No.</th><th>Posting Date</th>${sup ? '<th>Customer</th>' : ''}<th>Invoice</th><th>MoU No.</th><th class="num">Taxable (₹)</th><th class="num">GST (₹)</th><th class="num">Total (₹)</th><th>Documents</th></tr></thead>
+      <colgroup><col style="width:44px"><col style="width:${sup ? 140 : 170}px"><col style="width:${sup ? 125 : 140}px">${sup ? '<col>' : ''}<col style="width:${sup ? 170 : 230}px"><col style="width:120px"><col style="width:130px"><col style="width:115px"><col style="width:140px"><col style="width:${sup ? 150 : 170}px"></colgroup>
+      <thead><tr><th><input type="checkbox" data-cn="all-pdf" aria-label="Select all on this page"${pageAll ? ' checked' : ''}></th><th>CN/DN No.</th><th>Posting Date</th>${sup ? '<th>Customer</th>' : ''}<th>Invoice</th><th>MoU No.</th><th class="num">Taxable (₹)</th><th class="num">GST (₹)</th><th class="num">Total (₹)</th><th>Signed PDF</th></tr></thead>
       <tbody>${rows.map((d) => `<tr class="${S.sel[d.id] ? 'on' : ''}">
         <td><input type="checkbox" data-cn="pick" data-id="${d.id}" aria-label="Select ${d.docNo}"${S.sel[d.id] ? ' checked' : ''}></td>
         <td><div class="cn-main">${d.docNo}</div><div class="cn-sub"><span class="cn-type cn-${d.type}" style="height:20px;min-width:36px;font-size:11.5px">${d.type === 'CN' ? 'Credit' : 'Debit'}</span></div></td>
@@ -258,7 +258,7 @@
         <td><div>${d.gstInv}</div><div class="cn-sub">Bill Doc ${d.billDoc}</div></td>
         <td>${d.mou}</td>
         <td class="num">${inr(d.taxable)}</td><td class="num">${inr(d.gst)}</td><td class="num"><b style="font-weight:700">${inr(d.amount)}</b></td>
-        <td><div class="cn-doc"><button class="cn-pdf" data-act="cn-pdf" data-id="${d.id}" aria-label="Download signed PDF ${d.docNo}">${svDl}PDF</button><button class="cn-pdf" data-act="cn-work1" data-id="${d.id}" aria-label="Download working ${d.docNo}">${svDl}Working</button></div><div class="cn-sub"><span class="cn-sig">${svOk}Digitally signed</span></div></td></tr>`).join('')}</tbody></table></div>
+        <td><div class="cn-doc"><button class="cn-pdf" data-act="cn-pdf" data-id="${d.id}" aria-label="Download signed PDF ${d.docNo}">${svDl}PDF</button></div><div class="cn-sub"><span class="cn-sig">${svOk}Digitally signed</span></div></td></tr>`).join('')}</tbody></table></div>
     <div class="cn-pager"><b>Showing ${from} - ${to} of ${list.length}</b>
       <span style="width:1px;height:18px;background:#DADCE0;margin:0 4px"></span>
       <button class="pg" data-act="cn-page" data-n="0"${page === 0 ? ' disabled' : ''}>FIRST</button>
@@ -283,7 +283,6 @@
       const a = el.dataset.act; if (!a || !a.startsWith('cn-')) return false;
       if (a === 'cn-pdf') { const d = DOCS.find((x) => x.id === el.dataset.id); CFG.flash(`Download started – ${d.type} ${d.docNo} (digitally signed PDF)`); return true; }
       if (a === 'cn-bulkpdf') { const l = listDocs().filter((d) => S.sel[d.id]); CFG.flash(`Download started – CNDN_${l.length}_document${l.length === 1 ? '' : 's'}.zip (${l.length} digitally signed PDF${l.length === 1 ? '' : 's'})`); return true; }
-      if (a === 'cn-work1') { const d = DOCS.find((x) => x.id === el.dataset.id); CFG.flash(`Download started – CN_Working_${d.billDoc}.xlsx (working for ${d.type} ${d.docNo})`); return true; }
       if (a === 'cn-working') { const l = listDocs().filter((d) => S.sel[d.id]); CFG.flash(l.length === 1 ? `Download started – CN_Working_${l[0].billDoc}.xlsx (working for ${l[0].type} ${l[0].docNo})` : `Download started – CN_Workings_${l.length}_documents.xlsx (one sheet per CN/DN)`); return true; }
       if (a === 'cn-export') { S.menu = null; CFG.flash(`Exported ${listDocs().length} CN/DN record${listDocs().length === 1 ? '' : 's'} to Excel`); return true; }
       if (a === 'cn-menu') S.menu = S.menu === el.dataset.m ? null : el.dataset.m;
