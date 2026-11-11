@@ -15,6 +15,9 @@
   .cn-right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .cn-bulk { height: 40px; padding: 0 18px; border: 0; border-radius: 3px; background: #1565C0; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
   .cn-bulk:disabled { background: #9DB9DC; cursor: not-allowed; }
+  .cn-bulk.o { background: #fff; color: #1565C0; border: 1px solid #1565C0; }
+  .cn-bulk.o:hover:not(:disabled) { background: #F1F6FD; }
+  .cn-bulk.o:disabled { background: #fff; color: #9AA0A6; border-color: #C9CDD3; }
   .cn-note { font-size: 12.5px; color: #5F6368; padding: 0 16px 12px; }
   .cn-tbl { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 1040px; table-layout: fixed; }
   .cn-tbl > thead > tr > th:first-child { width: 44px; }
@@ -198,8 +201,9 @@
     const g = grp();
     return `<section class="card" style="padding:0;overflow:hidden">
     <div class="cn-listbar"><h2>CN/DN</h2>
-      <span class="meta">${isSup() ? (g ? esc(g.name || g.code) : 'All groups') + ' · ' : ''}Digitally signed documents – select several and download them together as one ZIP.</span>
+      <span class="meta">${isSup() ? (g ? esc(g.name || g.code) : 'All groups') + ' · ' : ''}Digitally signed documents – select CN/DNs to download them as one ZIP, or download their working.</span>
       <div class="cn-right"><span style="font-size:15px;font-weight:700">${list.length} document${list.length === 1 ? '' : 's'}</span>
+        <button class="cn-bulk o" data-act="cn-working"${n ? '' : ' disabled'} title="${n ? 'Download the Credit Note working for the selected CN/DNs' : 'Select CN/DNs to download their working'}">${svDl}Download Working</button>
         <button class="cn-bulk" data-act="cn-bulkpdf"${n ? '' : ' disabled'}>${svDl}Download Selected (${n})</button></div>
     </div>
     <div class="cn-wrap">${list.length ? `<table class="cn-tbl">
@@ -229,6 +233,7 @@
       const a = el.dataset.act; if (!a || !a.startsWith('cn-')) return false;
       if (a === 'cn-pdf') { const d = DOCS.find((x) => x.id === el.dataset.id); CFG.flash(`Download started – ${d.type} ${d.docNo} (digitally signed PDF)`); return true; }
       if (a === 'cn-bulkpdf') { const l = listDocs().filter((d) => S.sel[d.id]); CFG.flash(`Download started – CNDN_${l.length}_document${l.length === 1 ? '' : 's'}.zip (${l.length} digitally signed PDF${l.length === 1 ? '' : 's'})`); return true; }
+      if (a === 'cn-working') { const l = listDocs().filter((d) => S.sel[d.id]); CFG.flash(l.length === 1 ? `Download started – CN_Working_${l[0].billDoc}.xlsx (working for ${l[0].type} ${l[0].docNo})` : `Download started – CN_Workings_${l.length}_documents.xlsx (one sheet per CN/DN)`); return true; }
       if (a === 'cn-export') { S.menu = null; CFG.flash(`Exported ${listDocs().length} CN/DN record${listDocs().length === 1 ? '' : 's'} to Excel`); return true; }
       if (a === 'cn-menu') S.menu = S.menu === el.dataset.m ? null : el.dataset.m;
       else if (a === 'cn-pick') {
