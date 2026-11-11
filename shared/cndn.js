@@ -15,9 +15,9 @@
   .cn-right { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
   .cn-bulk { height: 40px; padding: 0 18px; border: 0; border-radius: 3px; background: #1565C0; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
   .cn-bulk:disabled { background: #9DB9DC; cursor: not-allowed; }
-  .cn-bulk.o { background: #fff; color: #1565C0; border: 1px solid #1565C0; }
-  .cn-bulk.o:hover:not(:disabled) { background: #F1F6FD; }
-  .cn-bulk.o:disabled { background: #fff; color: #9AA0A6; border-color: #C9CDD3; }
+  .cn-icon { width: 40px; height: 40px; border: 1px solid #1565C0; border-radius: 3px; background: #fff; color: #1565C0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+  .cn-icon:hover:not(:disabled) { background: #F1F6FD; }
+  .cn-icon:disabled { color: #9AA0A6; border-color: #C9CDD3; cursor: not-allowed; }
   .cn-note { font-size: 12.5px; color: #5F6368; padding: 0 16px 12px; }
   .cn-tbl { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 1040px; table-layout: fixed; }
   .cn-tbl > thead > tr > th:first-child { width: 44px; }
@@ -45,6 +45,7 @@
   const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const inr = (n, d = 2) => Number(n).toLocaleString('en-IN', { minimumFractionDigits: d, maximumFractionDigits: d });
   const svDl = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 19h16"/></svg>';
+  const svWork = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h6"/><path d="M14 3l5 5h-5z"/><path d="M8 11h6M8 14.5h3M10.5 11v7"/><path d="M18 13v7M15 17.5l3 3 3-3"/></svg>';
   const svOk = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>';
   const MONTHS = ['Apr 2026', 'May 2026', 'Jun 2026', 'Jul 2026', 'Aug 2026', 'Sep 2026', 'Oct 2026'];
   const MNUM = { 'Apr 2026': '04', 'May 2026': '05', 'Jun 2026': '06', 'Jul 2026': '07', 'Aug 2026': '08', 'Sep 2026': '09', 'Oct 2026': '10' };
@@ -203,7 +204,7 @@
     <div class="cn-listbar"><h2>CN/DN</h2>
       <span class="meta">${isSup() ? (g ? esc(g.name || g.code) : 'All groups') + ' · ' : ''}Digitally signed documents – select CN/DNs to download them as one ZIP, or download their working.</span>
       <div class="cn-right"><span style="font-size:15px;font-weight:700">${list.length} document${list.length === 1 ? '' : 's'}</span>
-        <button class="cn-bulk o" data-act="cn-working"${n ? '' : ' disabled'} title="${n ? 'Download the Credit Note working for the selected CN/DNs' : 'Select CN/DNs to download their working'}">${svDl}Download Working</button>
+        <button class="cn-icon" data-act="cn-working"${n ? '' : ' disabled'} aria-label="Download Working" title="${n ? 'Download Working for the selected CN/DNs' : 'Download Working – select CN/DNs first'}">${svWork}</button>
         <button class="cn-bulk" data-act="cn-bulkpdf"${n ? '' : ' disabled'}>${svDl}Download Selected (${n})</button></div>
     </div>
     <div class="cn-wrap">${list.length ? `<table class="cn-tbl">
