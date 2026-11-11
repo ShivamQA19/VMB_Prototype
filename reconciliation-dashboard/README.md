@@ -10,6 +10,6 @@ A switch at the top moves between the Supplier, RFM and Customer views. All thre
 - **DO Check** per customer: TDS-only difference follows the customer's verification; an exception follows RFM verification or the extension date.
 - **RFM Verify** unlocks once the customer verifies or raises an exception; exceptions need resolution remarks, TDS cases need the certificate checked. Locked once verified.
 - **Extend Date** for one customer, or select several and extend in bulk (REQ-08).
-- **CN/DN tab** (REQ-12/13): PDF / Working dropdown, posting-month or invoice-period filter, group and customer filters, multi-select bulk download, and the Credit Note working with a formula-linked Excel download.
+- **CN/DN tab** (REQ-12): digitally signed CN/DN PDFs with posting-month, group and customer filters and multi-select bulk download.
 
 Demo data only. Open `index.html` in a browser.
