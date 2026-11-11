@@ -10,5 +10,6 @@ Clickable prototypes for Vedanta Metal Bazaar. Demo data only.
 | Ledger Reconciliation – RFM | [`ledger-reconciliation-rfm/`](ledger-reconciliation-rfm/) | https://shivamqa19.github.io/VMB_Prototype/ledger-reconciliation-rfm/ |
 | Ledger Reconciliation – Customer | [`ledger-reconciliation-customer/`](ledger-reconciliation-customer/) | https://shivamqa19.github.io/VMB_Prototype/ledger-reconciliation-customer/ |
 | Export Order Flow | [`export-order-flow/`](export-order-flow/) | https://shivamqa19.github.io/VMB_Prototype/export-order-flow/ |
+| Pricing Enhancement Phase 2 | [`pricing-enhancement-phase-2/`](pricing-enhancement-phase-2/) | https://shivamqa19.github.io/VMB_Prototype/pricing-enhancement-phase-2/ |
 
 The root `index.html` links to all of them.
