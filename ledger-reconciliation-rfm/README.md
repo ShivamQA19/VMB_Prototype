@@ -10,6 +10,7 @@ RFM (Relationship / Finance Manager) view of Ledger Reconciliation for Vedanta M
   - TDS difference: the RFM ticks that the certificate was checked.
   - Exception: resolution remarks are required.
   - **Add Remark** and **Extend Date** (the DO check stays allowed until the new date for an open exception).
+- **CN/DN tab**: same filter bar (Customer Group optional, defaults to All groups), Type and Posting Month, then signed CN/DN PDFs with bulk download.
 - Verifying locks the reconciliation and updates the **customer** and **supplier** views straight away.
 
 ## Shared demo state
