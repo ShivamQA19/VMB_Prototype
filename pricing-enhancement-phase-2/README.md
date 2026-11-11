@@ -2,6 +2,7 @@
 
 Clickable prototype of the Phase 2 pricing changes for Vedanta Metal Bazaar (Lead and Zinc). Switch roles from the dark bar at the top: **Customer, ASM, RM, RFM, CSA, Treasury**.
 
+- **Home and PDP:** All Products catalog (SHG, CGG, EPG, HG, HZDA, Lead 99.99%, PW) with Buy Now. The product page has Buy Under MOU (MoU, variant, product specification, chemical composition and bundle accordions), quantity, Delivery in up to M+2, **Add to Cart** (stays on the page) and **Plan Order** (opens the cart). Spot Price and LP Sale tabs are shown but unchanged in Phase 2.
 - **Cart:** price-type split with PNDL (price now for M+1 / M+2 delivery), Already Priced fetched automatically, read-only Rollover and Preponement quantities, Customer / HZL Default, Initial vs Additional plan label, and the Net Physical Delivery and Net Pricing Qty formulas. Zero-quantity plans go to RM.
 - **Rollover / Preponement:** raised against an approved planned order. Eligibility follows the M+2 rule from the original delivery month (or MOU expiry, if earlier). The quantity stays blocked until final approval. Requests close at 1:00 PM IST on the last LME working day (use the **Demo clock**).
 - **Approval chain:** ASM → RM → RFM (service charge) → CSA → Treasury (backwardation / contango, up to 3 decimals). Final approval creates a Price Booking entry for the selected month. Any approver can reject with a reason, which releases the blocked quantity.
