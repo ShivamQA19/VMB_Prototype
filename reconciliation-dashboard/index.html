@@ -523,7 +523,7 @@ function reconView() {
       </div>
       ${S.sumOpen ? `
       <div style="overflow-x:auto">${summaryTable(cy.id, 'sumtbl')}</div>
-      ${cy.current && ex.length ? `<div class="alert" role="note"><span style="color:#B3261E">${sv(I.alert, 18, 2.2)}</span><span><b>${ex.length} exception${ex.length === 1 ? '' : 's'} raised today.</b> Alert mail to all RFMs goes out at ${ALERT_TIME}: ${ex.map((r) => esc(r.name)).join(', ')}.</span><button class="lnk" data-act="open" data-m="alert" style="margin-left:auto">Preview mail</button></div>` : ''}` : ''}
+      ` : ''}
     </section>
 
     <section class="card filters">

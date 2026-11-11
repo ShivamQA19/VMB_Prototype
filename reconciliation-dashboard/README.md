@@ -5,7 +5,6 @@ A switch at the top moves between this view and the customer view.
 
 - **Period-wise dashboards** (REQ-01 / REQ-06): pick HY1 (Apr – Sep) or HY2 (Oct – Mar); everything below follows that period.
 - **Summary** (collapsible) in the same format as the status mail: Region × Pending / Exception Raised / Verified / Total / % Pending.
-- **Exception alert**: when customers raise an exception that day, a banner shows the evening mail to all RFMs, with a preview listing customer names only.
 - **Customer Group** filter auto-fills Customer Code and Name; Status, Region and DO Check filters apply on APPLY. 6 records per page.
 - **Status logic**: Pending = no response, or customer verified and awaiting RFM · Exception Raised = customer raised an exception, RFM not yet verified · Verified = RFM verified.
 - **DO Check** per customer: TDS-only difference follows the customer's verification; an exception follows RFM verification or the extension date.
