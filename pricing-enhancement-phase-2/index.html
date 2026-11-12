@@ -458,12 +458,11 @@ class App extends React.Component {
       var ids = md.target === 'po' ? [md.id] : md.ids;
       var extra = {};
       if (s.role === 'RM') {
-        if (!f.eff) return this.setForm({ err: 'Select the Effective Date.' });
         var prem = String(f.prem == null ? '' : f.prem).trim();
         if (prem === '') prem = '0';
         if (!/^\d+(\.\d{1,2})?$/.test(prem)) return this.setForm({ err: 'Enter the Additional Premium as a number, for example 0 or 25.50.' });
-        var dp = f.eff.split('-');
-        extra = { eff: dp[2] + '/' + dp[1] + '/' + dp[0], prem: Number(prem).toFixed(2) };
+        var dp = f.eff ? f.eff.split('-') : null;
+        extra = { eff: dp ? dp[2] + '/' + dp[1] + '/' + dp[0] : '', prem: Number(prem).toFixed(2), rmDone: true };
       }
       var pos = s.pos.map(function (p) { if (ids.indexOf(p.id) < 0) return p; var n = Object.assign({}, p, extra); n.stage = p.stage + 1; return n; });
       this.setState({ pos: pos, modal: null, form: {}, selected: {} });
@@ -745,7 +744,7 @@ class App extends React.Component {
       return {
         canSelect: canSel, sel: !!s.selected[p.id], selLabel: 'Select plan ' + p.id,
         toggle: function () { var n = Object.assign({}, self.state.selected); if (n[p.id]) delete n[p.id]; else n[p.id] = true; self.setState({ selected: n }); },
-        hasEff: !!p.eff, effLine: 'Effective Date: ' + (p.eff || '') + ' · Additional Premium: ' + (p.prem || '0.00'),
+        hasEff: !!p.rmDone, effLine: (p.eff ? 'Effective Date: ' + p.eff + ' · ' : '') + 'Additional Premium: ' + (p.prem || '0.00'),
         isReq: false, isPo: true, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(p.planned - k.rolled), 'Planned : ' + fmt(p.planned), 'Delivered : ' + fmt(p.delivered)],
@@ -1386,7 +1385,7 @@ ${v.mApprove ? overlay('mapt', 520, html`<div>
   ${v.ma.needSc ? html`<div><label class="lbl" for="masc">Service Charge (USD/MT) – mandatory</label><input id="masc" class="inp" inputMode="decimal" value=${f.sc || ''} onChange=${v.ma.setSc} /></div>` : null}
   ${v.ma.needBw ? html`<div><label class="lbl" for="mabw">${v.ma.bwLabel}</label><input id="mabw" class="inp" inputMode="decimal" value=${f.bw || ''} onChange=${v.ma.setBw} placeholder="e.g. 3.125" /></div>` : null}
   ${v.ma.needPrem ? html`<div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px">
-    <div><label class="lbl" for="maeff">Effective Date – mandatory</label><input id="maeff" type="date" class="inp" value=${f.eff || ''} onChange=${v.ma.setEff} /></div>
+    <div><label class="lbl" for="maeff">Effective Date</label><input id="maeff" type="date" class="inp" value=${f.eff || ''} onChange=${v.ma.setEff} /></div>
     <div><label class="lbl" for="maprem">Additional Premium</label><input id="maprem" class="inp" inputMode="decimal" value=${f.prem == null ? '' : f.prem} onChange=${v.ma.setPrem} /></div>
   </div>` : null}
   ${v.ma.plain ? html`<p style="margin:0;font-size:15px">${v.ma.question}</p>` : null}

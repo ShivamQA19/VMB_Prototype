@@ -22,7 +22,7 @@ Sign in with any account below (password **demo123** for all), or click a demo-u
 - **Rollover / Preponement:** raised against an approved planned order. Eligibility follows the M+2 rule from the original delivery month (or MOU expiry, if earlier). The quantity stays blocked until final approval. Requests close at 1:00 PM IST on the last LME working day (use the **Demo clock**).
 - **Approval chain:** ASM → RM → RFM (service charge) → CSA → Treasury (backwardation / contango, up to 3 decimals). Final approval creates a Price Booking entry for the selected month. Any approver can reject with a reason, which releases the blocked quantity.
 - **ASM exception:** rollover beyond M+2 (up to M+12) with a mandatory Mail/PDF attachment (max 10 MB).
-- **Planned orders:** ASM → RM. RM is the final approver and enters Effective Date and Additional Premium; Select All supports bulk approval.
+- **Planned orders:** ASM → RM. RM is the final approver and can enter an Effective Date (optional) and Additional Premium; Select All supports bulk approval.
 - **Manual pricing (HZL direct):** ASM enters, CSA approves (maker–checker). Backdating within the current month only; cannot exceed the unpriced balance.
 - **Supplier Price Bookings** lists only plans that already have pricing. **Dashboard** and **Exception Report** (SAP vs VMB) follow the BRD columns.
 
