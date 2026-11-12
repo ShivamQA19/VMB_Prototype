@@ -315,7 +315,7 @@ function saveUser(u) { try { if (u) window.localStorage.setItem(SESSION_KEY, u);
 function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : 'po', supStatus: r === 'Customer' ? 'all' : 'mine' }; }
 function prodOf(id) { return PRODUCTS.find(function (p) { return p.id === id; }); }
 function imgOfP(id, variant) { var p = prodOf(id); return IMG[(p.vimg && p.vimg[variant]) || p.img]; }
-function emptyCart() { return { product: null, variant: '', mou: MOUS[0], delivery: CUR, qty: '0', rows: [{ qty: '0', type: 'Day CSP', priceIn: CUR }], cd: '0', hd: '0' }; }
+function emptyCart() { return { product: null, variant: '', mou: MOUS[0], delivery: CUR, qty: '0', rows: [{ qty: '0', type: 'Day CSP', priceIn: CUR }], cd: '0', hd: '0', already: {} }; }
 function newPdp(id) { var p = prodOf(id); return { product: id, tab: 'mou', mou: MOUS[0], variant: p.variants[0], qty: '1', delivery: CUR, open: { spec: true, chem: false, bundle: false } }; }
 
 function ml(i){ return MON[((i % 12) + 12) % 12] + ' (' + (2026 + Math.floor(i / 12)) + ')'; }
@@ -568,7 +568,7 @@ class App extends React.Component {
   addToCart(go) {
     var pd = this.state.pdp; var q = num(pd.qty);
     if (!(q > 0)) return this.flash('Enter a quantity of at least 1 MT.');
-    var cart = { product: pd.product, variant: pd.variant, mou: pd.mou, delivery: pd.delivery, qty: String(q), rows: [{ qty: String(q), type: 'Day CSP', priceIn: pd.delivery }], cd: '0', hd: '0' };
+    var cart = { product: pd.product, variant: pd.variant, mou: pd.mou, delivery: pd.delivery, qty: String(q), rows: [{ qty: String(q), type: 'Day CSP', priceIn: pd.delivery }], cd: '0', hd: '0', already: {} };
     this.setState({ cart: cart, cartErr: '', tab: go ? 'cart' : this.state.tab });
     if (!go) this.flash('cart has been created successfully');
   }
@@ -578,6 +578,9 @@ class App extends React.Component {
     if (q < 0) return this.setState({ cartErr: 'Quantity cannot be negative.' });
     var sum = c.rows.reduce(function (a, r) { return a + num(r.qty); }, 0);
     if (q > 0 && Math.abs(sum - q) > 0.0001) return this.setState({ cartErr: 'Price type quantities (' + fmt(sum) + ' MT) must add up to the plan quantity (' + fmt(q) + ' MT).' });
+    var apBad = Object.keys(c.already || {}).some(function (t) { var v = String(c.already[t]).trim(); return v !== '' && !(parseFloat(v) >= 0); });
+    if (apBad || num(c.cd) < 0 || num(c.hd) < 0) return this.setState({ cartErr: 'Quantities cannot be negative.' });
+    if (this._netPrice < 0) return this.setState({ cartErr: 'Already Priced quantity cannot be more than the planned, rollover and preponement quantity. Net Pricing Qty cannot be negative.' });
     if (q === 0 && num(c.cd) + num(c.hd) <= 0) return this.setState({ cartErr: 'For a zero-quantity plan, enter a Customer Default or HZL Default quantity.' });
     var seq = s.seq + 1; var D = c.delivery;
     var types = q === 0 ? 'HD / CD default' : c.rows.filter(function (r) { return num(r.qty) > 0; }).map(function (r) { return r.type + (r.priceIn < D ? ' (PNDL)' : (r.priceIn > D ? ' (DNPL)' : '')); }).join(', ');
@@ -654,9 +657,10 @@ class App extends React.Component {
     myBookings.forEach(function (b) { var p = self.poById(b.po); if (p.deliv === D && b.priceMonth < D && b.status === 'Approved' && b.source !== 'Rollover') alreadyMap[b.type] = (alreadyMap[b.type] || 0) + b.qty; });
     var already = Object.keys(alreadyMap).map(function (t) { return { type: t, qty: fmt(alreadyMap[t]) + ' MT' }; });
     var alreadyRows = ['Monthly Average', 'Day CSP'].concat(Object.keys(alreadyMap).filter(function (t) { return t !== 'Monthly Average' && t !== 'Day CSP'; })).map(function (t, i) {
-      var q = alreadyMap[t] || 0; return { key: t, tid: 'apt' + i, qid: 'apq' + i, type: t, qty: q ? String(Math.round(q * 1000) / 1000) : '0' };
+      var q = alreadyMap[t] || 0; var ov = c.already || {}; var val = ov[t] != null ? ov[t] : (q ? String(Math.round(q * 1000) / 1000) : '0');
+      return { key: t, tid: 'apt' + i, qid: 'apq' + i, type: t, qty: val, setQty: function (e) { var n = Object.assign({}, self.state.cart.already || {}); n[t] = e.target.value; self.setCart({ already: n }); } };
     });
-    var A = Object.keys(alreadyMap).reduce(function (a, t) { return a + alreadyMap[t]; }, 0);
+    var A = alreadyRows.reduce(function (a, r) { return a + num(r.qty); }, 0);
     var carried = []; var rollIn = 0; var prepIn = 0;
     s.reqs.forEach(function (r) {
       var p = self.poById(r.po);
@@ -666,6 +670,7 @@ class App extends React.Component {
     });
     var def = num(c.cd) + num(c.hd);
     var netPhys = def + A + qty; var netPrice = qty + rollIn + prepIn - A;
+    this._netPrice = netPrice;
     var initial = D > CUR;
 
     // ---------- customer planned orders ----------
@@ -893,7 +898,7 @@ class App extends React.Component {
       setCartQty: function (e) { var v = e.target.value; var x = { qty: v }; if (s.cart.rows.length === 1) x.rows = [Object.assign({}, s.cart.rows[0], { qty: v })]; self.setCart(x); },
       cartDec: function () { var v = String(Math.max(0, num(s.cart.qty) - 1)); var x = { qty: v }; if (s.cart.rows.length === 1) x.rows = [Object.assign({}, s.cart.rows[0], { qty: v })]; self.setCart(x); },
       cartInc: function () { var v = String(num(s.cart.qty) + 1); var x = { qty: v }; if (s.cart.rows.length === 1) x.rows = [Object.assign({}, s.cart.rows[0], { qty: v })]; self.setCart(x); },
-      setDeliv: function (e) { var m = Number(e.target.value); self.setCart({ delivery: m, rows: s.cart.rows.map(function (r) { return Object.assign({}, r, { priceIn: m, type: STD_TYPES.indexOf(r.type) >= 0 ? r.type : 'Day CSP' }); }) }); },
+      setDeliv: function (e) { var m = Number(e.target.value); self.setCart({ delivery: m, already: {}, rows: s.cart.rows.map(function (r) { return Object.assign({}, r, { priceIn: m, type: STD_TYPES.indexOf(r.type) >= 0 ? r.type : 'Day CSP' }); }) }); },
       setCd: function (e) { self.setCart({ cd: e.target.value }); },
       setHd: function (e) { self.setCart({ hd: e.target.value }); },
       addRow: function () { self.setCart({ rows: s.cart.rows.concat([{ qty: '0', type: 'Monthly Average', priceIn: s.cart.delivery }]) }); },
@@ -1172,7 +1177,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           </div>
           ${v.alreadyRows.map(function (a) { return html`<div key=${a.key} style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px 16px;margin-top:12px">
             <div><label class="lbl" for=${a.tid}>Already Priced</label><input id=${a.tid} class="inp" readOnly value=${a.type} /></div>
-            <div><label class="lbl" for=${a.qid}>Quantity</label><input id=${a.qid} class="inp ap-q" readOnly value=${a.qty} /></div>
+            <div><label class="lbl" for=${a.qid}>Quantity</label><input id=${a.qid} class="inp" inputMode="decimal" value=${a.qty} onChange=${a.setQty} /></div>
           </div>`; })}
           <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:18px">
             <div><label class="lbl" for="rin">Rollover (MT)</label><input id="rin" class="inp" readOnly value=${v.rollInLabel} /></div>
