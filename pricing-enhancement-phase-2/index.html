@@ -748,7 +748,7 @@ class App extends React.Component {
         hasEff: !!p.eff, effLine: 'Effective Date: ' + (p.eff || '') + ' · Additional Premium: ' + (p.prem || '0.00'),
         isReq: false, isPo: true, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
-        qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(p.planned - k.rolled), 'Planned : ' + fmt(p.planned), 'Unpriced : ' + fmt(k.unpriced), 'Delivered : ' + fmt(p.delivered)],
+        qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(p.planned - k.rolled), 'Planned : ' + fmt(p.planned), 'Delivered : ' + fmt(p.delivered)],
         created: p.created, status: st, statusColor: colorFor(st), hasTrail: false, trail: '',
         actionable: act, rejectLabel: 'Cancel', canException: canEx, noAction: !act && !canEx,
         approve: function () { self.setState({ modal: { kind: 'approve', target: 'po', id: p.id }, form: { eff: '', prem: '0', err: '' } }); },
@@ -1214,7 +1214,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
     <div class="card" style="overflow-x:auto"><div style="min-width:1150px">
       <div class="thead g-po"><div>PO ID</div><div>Order Details</div><div>Price In</div><div>Product Description</div><div>Quantity (MT)</div><div>Created Date</div><div>Status</div><div>Action</div></div>
       ${v.custPOs.map(function (p) { return html`<div key=${p.id} class="trow g-po">
-        <div><div style="color:#0B5CAD;font-weight:500">${p.id}</div><div class="muted" style="font-size:12px;margin-top:4px">${p.kind}</div></div>
+        <div><div style="color:#0B5CAD;font-weight:500">${p.id}</div></div>
         <div>
           <div class="ln">Price Type: ${p.priceType}</div>
           <div class="ln">Delivery In: ${p.delivLabel}</div>
@@ -1227,8 +1227,6 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           <div class="ln">Net Physical Qty : ${p.physical}</div>
           <div class="ln">Net Pricing Qty : ${p.pricing}</div>
           <div class="ln">Planned : ${p.planned}</div>
-          <div class="ln">Priced : ${p.priced}</div>
-          <div class="ln">Unpriced : ${p.unpriced}</div>
           ${p.hasBlocked ? html`<div class="ln" style="color:#7A4A00">Blocked (request pending) : ${p.blocked}</div>` : null}
           <div class="ln">Delivered : ${p.delivered}</div>
           ${p.hasPriceBy ? html`<span class="badge" style=${p.priceByStyle}>${p.priceByLabel}</span>` : null}
@@ -1292,7 +1290,6 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             <div class="ln">Delivery In: ${it.origin}</div>
             <div class="ln">MoU No: ${it.mou}</div>
             ${it.hasEff ? html`<div class="ln">${it.effLine}</div>` : null}
-            <div class="muted" style="font-size:12px">${it.kind}</div>
           </div>`}
         </div>
         <div>${it.priceIn}</div>
