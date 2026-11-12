@@ -1295,7 +1295,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         <div>${it.product}</div>
         <div>${it.qtyLines.map(function (q) { return html`<div key=${q} class="ln">${q}</div>`; })}</div>
         <div>${it.created}</div>
-        <div><div style=${'color:' + it.statusColor}>● ${it.status}</div>${it.hasTrail ? html`<div class="muted" style="font-size:12px;margin-top:6px">${it.trail}</div>` : null}</div>
+        <div><div style=${'color:' + it.statusColor}>● ${it.status}</div></div>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
           ${it.actionable ? html`<button type="button" class="lnk" onClick=${it.approve}>✓ Approve</button>` : null}
           ${it.actionable ? html`<button type="button" class="lnk" onClick=${it.reject}>✕ ${it.rejectLabel}</button>` : null}
