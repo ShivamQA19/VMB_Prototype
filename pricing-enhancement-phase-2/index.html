@@ -312,7 +312,7 @@ var ACCOUNTS = {
 var SESSION_KEY = 'vmb-pricing-p2-user';
 function loadUser() { try { var u = window.localStorage.getItem(SESSION_KEY); return ACCOUNTS[u] ? u : null; } catch (e) { return null; } }
 function saveUser(u) { try { if (u) window.localStorage.setItem(SESSION_KEY, u); else window.localStorage.removeItem(SESSION_KEY); } catch (e) {} }
-function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : 'po', supStatus: r === 'Customer' ? 'all' : 'mine' }; }
+function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : 'po', supStatus: 'all' }; }
 function prodOf(id) { return PRODUCTS.find(function (p) { return p.id === id; }); }
 function imgOfP(id, variant) { var p = prodOf(id); return IMG[(p.vimg && p.vimg[variant]) || p.img]; }
 function emptyCart() { return { product: null, variant: '', mou: MOUS[0], delivery: CUR, qty: '0', rows: [{ qty: '0', type: 'Day CSP', priceIn: CUR }], cd: '0', hd: '0', already: {} }; }
@@ -591,7 +591,7 @@ class App extends React.Component {
 
   renderVals() {
     var self = this; var s = this.state; var role = s.role; var isCust = role === 'Customer';
-    var roleBtns = ROLES.map(function (r) { return { label: r === 'Customer' ? 'Customer (777)' : r, style: pill(r === role), pick: function () { self.setState({ role: r, tab: r === 'Customer' ? 'home' : 'po', modal: null, form: {}, selected: {}, supStatus: r === 'Customer' ? 'all' : 'mine' }); } }; });
+    var roleBtns = ROLES.map(function (r) { return { label: r === 'Customer' ? 'Customer (777)' : r, style: pill(r === role), pick: function () { self.setState({ role: r, tab: r === 'Customer' ? 'home' : 'po', modal: null, form: {}, selected: {}, supStatus: 'all' }); } }; });
     var clockBtns = [{ label: 'Before 1 PM cut-off', on: !s.afterCutoff }, { label: 'After 1 PM cut-off', on: s.afterCutoff }].map(function (x, i) { return { label: x.label, style: pill(x.on), pick: function () { self.setState({ afterCutoff: i === 1 }); } }; });
     var tabDefs = isCust ? [['home', 'Home'], ['cart', 'Cart (' + (s.cart.product ? 1 : 0) + ')'], ['po', 'Planned Orders'], ['pb', 'Price Bookings']] : [['po', 'Planned Orders'], ['pb', 'Price Bookings'], ['dash', 'Dashboard'], ['exc', 'Exception Report']];
     var tabs = tabDefs.map(function (t) { return { label: t[1], cls: 'tab' + (s.tab === t[0] ? ' tab-on' : ''), pick: function () { self.setState({ tab: t[0] }); } }; });
