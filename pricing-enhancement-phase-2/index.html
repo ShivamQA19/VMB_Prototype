@@ -684,7 +684,7 @@ class App extends React.Component {
       else if (ok && k.unpriced === 0) hint = 'Fully priced.';
       var reqLines = s.reqs.filter(function (r) { return r.po === p.id; }).map(function (r) { return r.type + ' ' + r.id + ': ' + fmt(r.qty) + ' MT → ' + ml(r.month) + ' · ' + self.reqStatus(r); });
       return {
-        id: p.id, kind: p.kind, priceType: p.priceType, delivLabel: ml(p.deliv), mou: p.mou, reqLines: reqLines,
+        isReq: false, seq: p.seq, id: p.id, kind: p.kind, priceType: p.priceType, delivLabel: ml(p.deliv), mou: p.mou, reqLines: reqLines,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         physical: fmt(p.planned), pricing: fmt(p.planned - k.rolled), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
         hasBlocked: k.blocked > 0, blocked: fmt(k.blocked), delivered: fmt(p.delivered),
@@ -698,6 +698,18 @@ class App extends React.Component {
         hasHint: !!hint, hint: hint, hintColor: hintColor
       };
     });
+
+    var custReqRows = s.reqs.filter(function (r) { var rp = self.poById(r.po); return rp && rp.cust === '777'; }).map(function (r) {
+      var rp = self.poById(r.po); var st = self.reqStatus(r);
+      return {
+        isReq: true, seq: r.seq, id: r.id, typeLabel: r.type, parentPo: r.po, priceType: r.priceType, origin: ml(rp.deliv), mou: rp.mou,
+        priceIn: ml(r.month), product: rp.product, qtyLabel: r.type + ' Qty : ' + fmt(r.qty),
+        hasSc: !!r.sc, scLine: 'Service charge: ' + r.sc + ' USD/MT', hasBw: !!r.bw, bwLine: (r.type === 'Rollover' ? 'Backwardation: ' : 'Contango: ') + r.bw + ' USD/MT',
+        hasReason: !!r.reason, reason: r.reason, exception: !!r.exception,
+        created: r.created, status: st, statusColor: colorFor(st)
+      };
+    });
+    custPOs = custPOs.concat(custReqRows).sort(function (a, b) { return b.seq - a.seq; });
 
     // ---------- bookings ----------
     var bookingView = function (b) {
@@ -1208,13 +1220,29 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
     </div>
     <div class="card" style="overflow-x:auto"><div style="min-width:1150px">
       <div class="thead g-po"><div>PO ID</div><div>Order Details</div><div>Price In</div><div>Product Description</div><div>Quantity (MT)</div><div>Created Date</div><div>Status</div><div>Action</div></div>
-      ${v.custPOs.map(function (p) { return html`<div key=${p.id} class="trow g-po">
+      ${v.custPOs.map(function (p) { if (p.isReq) return html`<div key=${p.id} class="trow g-po" style="background:#FBFAFF">
+        <div><div style="color:#0B5CAD;font-weight:500">${p.id}</div><span class="badge" style="background:#EDE7F6;color:#4527A0;margin-top:6px">${p.typeLabel}</span></div>
+        <div>
+          <div class="ln">Parent PO ID: <span style="color:#0B5CAD;font-weight:500">${p.parentPo}</span></div>
+          <div class="ln">Price Type: ${p.priceType}</div>
+          <div class="ln">Origin Delivery: ${p.origin}</div>
+          <div class="ln">MoU No: ${p.mou}</div>
+          ${p.hasSc ? html`<div class="ln">${p.scLine}</div>` : null}
+          ${p.hasBw ? html`<div class="ln">${p.bwLine}</div>` : null}
+          ${p.hasReason ? html`<div class="ln" style="color:#B3261E">Reason: ${p.reason}</div>` : null}
+        </div>
+        <div>${p.priceIn}</div>
+        <div>${p.product}</div>
+        <div><div class="ln">${p.qtyLabel}</div></div>
+        <div>${p.created}</div>
+        <div style=${'color:' + p.statusColor}>● ${p.status}</div>
+        <div><span>–</span></div>
+      </div>`; return html`<div key=${p.id} class="trow g-po">
         <div><div style="color:#0B5CAD;font-weight:500">${p.id}</div></div>
         <div>
           <div class="ln">Price Type: ${p.priceType}</div>
           <div class="ln">Delivery In: ${p.delivLabel}</div>
           <div class="ln">MoU No: ${p.mou}</div>
-          ${p.reqLines.map(function (rl) { return html`<div key=${rl} style="font-size:12px;background:#EEF4FB;color:#0B3D73;border-radius:4px;padding:5px 8px;margin-top:6px">${rl}</div>`; })}
         </div>
         <div>${p.priceIn}</div>
         <div>${p.product}</div>
@@ -1272,7 +1300,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           ${it.isReq ? html`<div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="badge" style="background:#EDE7F6;color:#4527A0">${it.typeLabel}</span>${it.exception ? html`<span class="badge" style="background:#FFF4E5;color:#7A4A00">Beyond M+2 · ASM exception</span>` : null}</div>
             <div class="ln">Request ID: ${it.id}</div>
-            <div class="ln">PO ID: <span style="color:#0B5CAD">${it.po}</span></div>
+            <div class="ln">Parent PO ID: <span style="color:#0B5CAD">${it.po}</span></div>
             <div class="ln">Price Type: ${it.priceType}</div>
             <div class="ln">Origin delivery: ${it.origin} · Price-by: ${it.priceBy}</div>
             ${it.hasFile ? html`<div class="ln">Attachment: <span style="color:#0B5CAD">${it.file}</span></div>` : null}
