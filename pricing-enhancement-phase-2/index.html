@@ -138,6 +138,15 @@ a{color:#0B5CAD}a:hover{color:#08427D}
 .pbconn:after{content:"";position:absolute;right:-6px;bottom:-5px;width:9px;height:9px;border-radius:50%;background:#212529}
 .pbpill{display:inline-flex;align-items:center;gap:8px;padding:5px 10px;border-radius:4px;font-size:14px;font-weight:500}
 .pbpill i{width:9px;height:9px;border-radius:50%;flex:none}
+.seg{display:inline-flex;border:1px solid #0B5CAD;border-radius:6px;overflow:hidden}
+.segb{height:38px;padding:0 16px;border:0;background:#fff;color:#0B5CAD;font:600 14px Roboto,Arial,sans-serif;cursor:pointer}
+.segb+.segb{border-left:1px solid #0B5CAD}
+.segb-on{background:#0B5CAD;color:#fff}
+.g-m1{grid-template-columns:0.7fr 2fr 0.8fr 1fr 1.3fr 1.4fr}
+.g-m1w{grid-template-columns:1fr 2.4fr 1fr}
+.sw{width:44px;height:24px;border-radius:12px;border:0;background:#B0B7C3;position:relative;cursor:pointer;vertical-align:middle;padding:0}
+.sw span{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+.sw-on{background:#3E7C17}.sw-on span{left:23px}
 </style>
 <script>
 // Minimal built-in renderer (no external libraries): tagged-template parser + full re-render with focus restore.
@@ -302,7 +311,16 @@ var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 var CUR = 10;
 var CHAIN = ['ASM','RM','RFM','CSA','Treasury'];
 var PO_CHAIN = ['ASM','RM'];
-var ROLES = ['Customer','ASM','RM','RFM','CSA','Treasury'];
+var ROLES = ['Customer','ASM','RM','RFM','CSA','Treasury','MFC'];
+var M1_CUSTOMERS = [
+  { code: '777', name: 'MAHAVEER METAL CO.', region: 'North', products: 'Lead, Zinc' },
+  { code: '8741', name: 'DIGIMRO DISTRIBUTION (INDIA) PRIVATE LIMITED', region: 'West', products: 'Zinc' },
+  { code: '1150', name: 'AMARA RAJA BATTERIES LTD (ARBL)', region: 'South', products: 'Lead' }
+];
+function firstLmeWd(m) { var y = 2026 + Math.floor(m / 12), mo = ((m % 12) + 12) % 12; for (var d = 1; d <= 7; d++) { var dt = new Date(y, mo, d); var w = dt.getDay(); if (w === 0 || w === 6 || (mo === 0 && d === 1)) continue; return dt; } }
+function dmy(dt) { return (dt.getDate() < 10 ? '0' : '') + dt.getDate() + '/' + (dt.getMonth() < 9 ? '0' : '') + (dt.getMonth() + 1) + '/' + dt.getFullYear(); }
+function demoToday() { var n = new Date(); return (n.getFullYear() === 2026 && n.getMonth() === 10) ? new Date(2026, 10, n.getDate()) : new Date(2026, 10, 19); }
+function m1Target() { return demoToday() <= firstLmeWd(CUR) ? CUR + 1 : CUR + 2; }
 var STD_TYPES = ['Monthly Average','Day CSP'];
 var PNDL_TYPES = ['Day CSP','Spot – Screen','Spot – Target','BDA','Period Average'];
 var MOUS = ['MOU500011445','MOU500011502'];
@@ -324,12 +342,13 @@ var ACCOUNTS = {
   RM: { email: 'rm@vedanta.com', name: 'Regional Manager', initials: 'RM', desc: 'Final plan approval' },
   RFM: { email: 'rfm@vedanta.com', name: 'Regional Finance Manager', initials: 'RF', desc: 'Adds service charge' },
   CSA: { email: 'csa@vedanta.com', name: 'Customer Service Agent', initials: 'CS', desc: 'Checks manual pricing' },
-  Treasury: { email: 'treasury@vedanta.com', name: 'Treasury', initials: 'TR', desc: 'Adds backwardation' }
+  Treasury: { email: 'treasury@vedanta.com', name: 'Treasury', initials: 'TR', desc: 'Adds backwardation' },
+  MFC: { email: 'mfc@vedanta.com', name: 'MFC', initials: 'MF', desc: 'Enables M-1 customers' }
 };
 var SESSION_KEY = 'vmb-pricing-p2-user';
 function loadUser() { try { var u = window.localStorage.getItem(SESSION_KEY); return ACCOUNTS[u] ? u : null; } catch (e) { return null; } }
 function saveUser(u) { try { if (u) window.localStorage.setItem(SESSION_KEY, u); else window.localStorage.removeItem(SESSION_KEY); } catch (e) {} }
-function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : 'po', supStatus: 'all' }; }
+function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : (r === 'MFC' ? 'm1' : 'po'), supStatus: 'all' }; }
 var BOOK_TYPES = ['Day CSP', 'Period Average', 'Spot – Screen', 'Spot – Target', 'BDA', 'WEH'];
 var TYPE_LABEL = { 'Day CSP': 'Day CSP', 'Period Average': 'Period Average', 'Spot – Screen': 'Screen Price', 'Spot – Target': 'Target Price', 'BDA': 'Balance Day Avg', 'WEH': 'Which Ever Higher' };
 function mlD(i) { return MON[((i % 12) + 12) % 12] + '-' + (2026 + Math.floor(i / 12)); }
@@ -342,7 +361,7 @@ function pmOf(p) { return p.pm != null ? p.pm : (p.priceInLbl ? CUR : p.deliv); 
 function prodOf(id) { return PRODUCTS.find(function (p) { return p.id === id; }); }
 function imgOfP(id, variant) { var p = prodOf(id); return IMG[(p.vimg && p.vimg[variant]) || p.img]; }
 function emptyCart() { return { product: null, variant: '', mou: MOUS[0], delivery: CUR, qty: '0', rows: [{ qty: '0', type: 'Day CSP', priceIn: CUR }], cd: '0', hd: '0', already: {} }; }
-function newPdp(id) { var p = prodOf(id); return { product: id, tab: 'mou', mou: MOUS[0], variant: p.variants[0], qty: '1', delivery: CUR, open: { spec: true, chem: false, bundle: false } }; }
+function newPdp(id) { var p = prodOf(id); return { product: id, tab: 'mou', mou: MOUS[0], variant: p.variants[0], qty: '1', delivery: CUR, planType: 'regular', open: { spec: true, chem: false, bundle: false } }; }
 
 function ml(i){ return MON[((i % 12) + 12) % 12] + ' (' + (2026 + Math.floor(i / 12)) + ')'; }
 function num(v){ var n = parseFloat(v); return isNaN(n) ? 0 : n; }
@@ -371,7 +390,7 @@ function seedState(){
   function po(o){ var r = {}; var k; for (k in M) r[k] = M[k]; for (k in o) r[k] = o[k]; if (!r.rejectedBy) r.rejectedBy = ''; return r; }
   return {
     role: 'Customer', tab: 'home', afterCutoff: false, toast: '', modal: null, form: {}, supStatus: 'all', supType: 'all', seq: 100, cartErr: '', selected: {},
-    cart: emptyCart(), pdp: newPdp('LEAD'),
+    cart: emptyCart(), pdp: newPdp('LEAD'), m1: { '777': true, '8741': false, '1150': true }, m1Log: { '777': 'Enabled by MFC on 03/11/2026', '1150': 'Enabled by MFC on 21/10/2026' },
     pos: [
       po({ id: 'MOG100018150', priceType: 'Day CSP', deliv: 8, planned: 200, delivered: 200, stage: 2, created: '28/08/2026 10:15 AM', kind: 'Initial Plan', seq: 10 }),
       po({ id: 'MOG100018163', priceType: 'Day CSP', deliv: 9, planned: 100, delivered: 100, stage: 2, created: '29/09/2026 11:05 AM', kind: 'Initial Plan', seq: 20 }),
@@ -501,7 +520,8 @@ class App extends React.Component {
       }
       var pos = s.pos.map(function (p) { if (ids.indexOf(p.id) < 0) return p; var n = Object.assign({}, p, extra); n.stage = p.stage + 1; return n; });
       this.setState({ pos: pos, modal: null, form: {}, selected: {} });
-      return this.flash(ids.length > 1 ? ids.length + ' Plans Approved Successfully' : 'Plan Approved Successfully');
+      var m1Done = pos.some(function (p) { return ids.indexOf(p.id) >= 0 && p.m1 && p.stage >= 2; });
+      return this.flash((ids.length > 1 ? ids.length + ' Plans Approved Successfully' : 'Plan Approved Successfully') + (m1Done ? ' · M-1 instruction email sent to Treasury and CSA · sent to SAP under M-1 column' : ''));
     }
     var r = s.reqs.find(function (x) { return x.id === md.id; });
     if (s.role === 'RFM' && !/^\d+(\.\d{1,2})?$/.test(String(f.sc || '').trim())) return this.setForm({ err: 'Enter the service charge in USD/MT, for example 10.00.' });
@@ -558,7 +578,7 @@ class App extends React.Component {
     var self = this; var s = this.state; var out = [];
     s.pos.forEach(function (p) {
       if (cust && p.cust !== cust) return;
-      if (self.poStatus(p) !== 'Approved' || p.planned <= 0) return;
+      if (self.poStatus(p) !== 'Approved' || p.planned <= 0 || p.m1) return;
       var k = self.calc(p);
       out.push({ key: p.id, kind: 'Planned Order', parent: p.id, p: p, month: pmOf(p), qty: k.pricing, booked: k.priced + k.pendingB, priced: k.priced, sc: '', cb: '', priceType: p.priceType, seq: p.seq, moved: k.rolled + k.preponed, held: k.blocked - k.pendingB });
     });
@@ -686,7 +706,10 @@ class App extends React.Component {
         { key: 'do', label: 'Delivery Orders', soon: 'Existing', onClick: soon('Delivery Orders use the existing flow') }
       ]));
     } else {
-      items.push({ key: 'home', icon: 'home', label: 'Home', cur: t === 'po', onClick: go('po') });
+      if (s.role === 'MFC') {
+        items.push({ key: 'home', icon: 'home', label: 'Home', cur: t === 'm1', onClick: go('m1') });
+        items.push({ key: 'm1', icon: 'manage', label: 'M-1 Enablement', cur: t === 'm1', onClick: go('m1') });
+      } else items.push({ key: 'home', icon: 'home', label: 'Home', cur: t === 'po', onClick: go('po') });
       items.push(group('proc', 'manage', 'Procurement', [
         { key: 'po', label: 'Planned Orders', cur: t === 'po', cnt: pending, onClick: go('po') },
         { key: 'pb', label: 'Price Bookings', cur: t === 'pb', onClick: go('pb') },
@@ -717,7 +740,8 @@ class App extends React.Component {
   addToCart(go) {
     var pd = this.state.pdp; var q = num(pd.qty);
     if (!(q > 0)) return this.flash('Enter a quantity of at least 1 MT.');
-    var cart = { product: pd.product, variant: pd.variant, mou: pd.mou, delivery: pd.delivery, qty: String(q), rows: [{ qty: String(q), type: 'Day CSP', priceIn: pd.delivery }], cd: '0', hd: '0', already: {} };
+    var isM1 = pd.planType === 'm1' && !!this.state.m1['777']; var dl = isM1 ? m1Target() : pd.delivery;
+    var cart = { product: pd.product, variant: pd.variant, mou: pd.mou, delivery: dl, m1: isM1, qty: String(q), rows: [{ qty: String(q), type: isM1 ? 'MOSS (M-1)' : 'Day CSP', priceIn: dl }], cd: '0', hd: '0', already: {} };
     this.setState({ cart: cart, cartErr: '', tab: go ? 'cart' : this.state.tab });
     if (!go) this.flash('cart has been created successfully');
   }
@@ -731,6 +755,15 @@ class App extends React.Component {
     if (apBad || num(c.cd) < 0 || num(c.hd) < 0) return this.setState({ cartErr: 'Quantities cannot be negative.' });
     if (this._netPrice < 0) return this.setState({ cartErr: 'Already Priced quantity cannot be more than the planned, rollover and preponement quantity. Net Pricing Qty cannot be negative.' });
     if (q === 0 && num(c.cd) + num(c.hd) <= 0) return this.setState({ cartErr: 'For a zero-quantity plan, enter a Customer Default or HZL Default quantity.' });
+    if (c.m1) {
+      if (!s.m1['777']) return this.setState({ cartErr: 'M-1 planning is not enabled for your account.' });
+      if (!(q > 0)) return this.setState({ cartErr: 'Enter the M-1 quantity.' });
+      if (c.delivery !== m1Target()) return this.setState({ cartErr: 'The M-1 window for ' + ml(c.delivery) + ' delivery has closed.' });
+      var seqM = s.seq + 1;
+      var pm1 = { id: 'MOG1000' + (18100 + seqM), cust: '777', custName: 'MAHAVEER METAL CO.', region: 'North', product: c.variant, mou: c.mou, mouExp: 14, priceType: 'MOSS (M-1)', deliv: c.delivery, planned: q, delivered: 0, stage: 0, created: nowStr(), kind: 'M-1 Plan', m1: true, seq: seqM, rejectedBy: '' };
+      this.setState({ pos: s.pos.concat([pm1]), seq: seqM, tab: 'po', cartErr: '', cart: emptyCart() });
+      return this.flash('M-1 Planned Order created Successfully · ASM Approval Pending');
+    }
     var seq = s.seq + 1; var D = c.delivery;
     var types = q === 0 ? 'HD / CD default' : c.rows.filter(function (r) { return num(r.qty) > 0; }).map(function (r) { return r.type + (r.priceIn < D ? ' (PNDL)' : (r.priceIn > D ? ' (DNPL)' : '')); }).join(', ');
     var po = { id: 'MOG1000' + (18100 + seq), cust: '777', custName: 'MAHAVEER METAL CO.', region: 'North', product: c.variant, mou: c.mou, mouExp: 14, priceType: types, deliv: D, planned: q, delivered: 0, stage: q === 0 ? 1 : 0, created: nowStr(), kind: q === 0 ? 'Zero-quantity plan' : (D === CUR ? 'Additional Plan' : 'Initial Plan'), seq: seq, rejectedBy: '' };
@@ -782,7 +815,12 @@ class App extends React.Component {
       hasNote: pd.delivery > CUR,
       note: 'Delivery in ' + ml(pd.delivery) + ': you can book the price now (PNDL) or in the delivery month. M+2 is the furthest delivery month available.',
       addToCart: function () { self.addToCart(false); }, planOrder: function () { self.addToCart(true); },
-      otherNote: 'Existing flow, not changed in Phase 2. Use Buy Under MOU for this prototype.'
+      otherNote: 'Existing flow, not changed in Phase 2. Use Buy Under MOU for this prototype.',
+      m1On: !!s.m1['777'] && pd.tab === 'mou', isM1: pd.planType === 'm1' && !!s.m1['777'],
+      regCls: 'segb' + (pd.planType !== 'm1' ? ' segb-on' : ''), m1Cls: 'segb' + (pd.planType === 'm1' ? ' segb-on' : ''),
+      setRegular: function () { setPdp({ planType: 'regular' }); }, setM1: function () { setPdp({ planType: 'm1' }); },
+      m1Month: ml(m1Target()),
+      m1Note: 'M-1 plan for ' + ml(m1Target()) + ' delivery. Submit on or before ' + dmy(firstLmeWd(m1Target() - 1)) + ' (1st LME working day of ' + ml(m1Target() - 1) + '). Priced as MOSS; not available for price booking.'
     };
 
     // ---------- cart ----------
@@ -817,7 +855,8 @@ class App extends React.Component {
       if (r.type === 'Rollover') rollIn += r.qty; else prepIn += r.qty;
       carried.push(r.type + ': ' + fmt(r.qty) + ' MT from ' + r.po + ' (' + ml(p.deliv) + ' delivery) · ' + r.priceType);
     });
-    var def = num(c.cd) + num(c.hd);
+    var m1In = s.pos.filter(function (p) { return p.m1 && p.cust === '777' && p.deliv === D && self.poStatus(p) === 'Approved'; }).reduce(function (a, p) { return a + p.planned; }, 0);
+    var def = num(c.cd) + num(c.hd) + m1In;
     var netPhys = def + A + qty; var netPrice = qty + rollIn + prepIn - A;
     this._netPrice = netPrice;
     var initial = D > CUR;
@@ -840,8 +879,8 @@ class App extends React.Component {
         hasBlocked: k.blocked > 0, blocked: fmt(k.blocked), delivered: fmt(p.delivered),
         hasPriceBy: ok && k.unpriced > 0, priceByLabel: due ? 'Must be priced in ' + ml(CUR) + ' (M+2 reached)' : 'Rollover allowed till: ' + ml(k.priceBy), priceByStyle: due ? 'background:#FDECEA;color:#8C1D18;margin-top:4px' : 'background:#E3F2FD;color:#0B3D73;margin-top:4px',
         created: p.created, status: st, statusColor: colorFor(st), isApproved: ok, notApproved: !ok,
-        rollDis: !ok || p.deliv > CUR || k.available <= 0 || s.afterCutoff || rollOpts.length === 0,
-        preDis: !ok || p.deliv <= CUR || k.available <= 0 || s.afterCutoff,
+        rollDis: !ok || p.deliv > CUR || k.available <= 0 || s.afterCutoff || rollOpts.length === 0 || !!p.m1,
+        preDis: !ok || p.deliv <= CUR || k.available <= 0 || s.afterCutoff || !!p.m1, isM1: !!p.m1, m1Sap: ok ? 'Sent to SAP under the M-1 column' : 'Goes to SAP under the M-1 column once approved',
         openRoll: function () { self.openReq('Rollover', p.id, false); },
         openPre: function () { self.openReq('Preponement', p.id, false); },
         nyi: function () { self.flash('Existing flow – not changed in Phase 2'); },
@@ -923,13 +962,13 @@ class App extends React.Component {
     var poView = function (p) {
       var k = self.calc(p); var st = self.poStatus(p);
       var act = !p.rejectedBy && p.stage < 2 && PO_CHAIN[p.stage] === role;
-      var canEx = role === 'ASM' && st === 'Approved' && p.deliv <= CUR && k.available > 0;
+      var canEx = role === 'ASM' && st === 'Approved' && p.deliv <= CUR && k.available > 0 && !p.m1;
       var canSel = role === 'RM' && act;
       return {
         canSelect: canSel, sel: !!s.selected[p.id], selLabel: 'Select plan ' + p.id,
         toggle: function () { var n = Object.assign({}, self.state.selected); if (n[p.id]) delete n[p.id]; else n[p.id] = true; self.setState({ selected: n }); },
         hasEff: !!p.rmDone, effLine: (p.eff ? 'Effective Date: ' + p.eff + ' · ' : '') + 'Additional Premium: ' + (p.prem || '0.00'),
-        isReq: false, isPo: true, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
+        isReq: false, isPo: true, isM1: !!p.m1, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(k.pricing), 'Planned : ' + fmt(p.planned), 'Delivered : ' + fmt(p.delivered)],
         created: p.created, status: st, statusColor: colorFor(st), hasTrail: false, trail: '',
@@ -1068,7 +1107,7 @@ class App extends React.Component {
       yes: true, role: role, isCust: isCust, isSup: !isCust,
       roleBtns: roleBtns, clockBtns: clockBtns, tabs: tabs,
       nav: this.navModel(isCust, pendingCount), isPdpView: isCust && s.tab === 'pdp',
-      pageTitle: ({ home: 'All Products', cart: 'Cart', po: 'Planned Orders', pb: 'Price Bookings', dash: 'Dashboard', exc: 'Exception Report' })[s.tab] || '',
+      pageTitle: ({ m1: 'M-1 Enablement', home: 'All Products', cart: 'Cart', po: 'Planned Orders', pb: 'Price Bookings', dash: 'Dashboard', exc: 'Exception Report' })[s.tab] || '',
       reset: function () { clearTimeout(self._t); var st = seedState(); Object.assign(st, { user: s.user, loginEmail: '', loginPwd: '', loginErr: '' }, roleHome(s.user || 'Customer')); self.setState(st); self.flash('Sample data restored'); },
       loggedIn: !!s.user, acct: ACCOUNTS[role], logout: function () { self.logout(); },
       loginV: {
@@ -1087,7 +1126,12 @@ class App extends React.Component {
       crumbs: crumbs,
       showCutBanner: s.afterCutoff && isCust && s.tab === 'po',
       vCart: isCust && s.tab === 'cart' && !!c.product, vCartEmpty: isCust && s.tab === 'cart' && !c.product, vHome: isCust && s.tab === 'home', vPdp: isCust && s.tab === 'pdp', vCustPO: isCust && s.tab === 'po', vCustPB: isCust && s.tab === 'pb',
-      vSupPO: !isCust && s.tab === 'po', vSupPB: !isCust && s.tab === 'pb', vDash: !isCust && s.tab === 'dash', vExc: !isCust && s.tab === 'exc',
+      vSupPO: !isCust && s.tab === 'po', vSupPB: !isCust && s.tab === 'pb', vDash: !isCust && s.tab === 'dash', vExc: !isCust && s.tab === 'exc', vM1: role === 'MFC' && s.tab === 'm1',
+      m1Page: {
+        rows: M1_CUSTOMERS.map(function (c) { var on = !!s.m1[c.code]; return { code: c.code, name: c.name, region: c.region, products: c.products, on: on, label: on ? 'Enabled' : 'Not enabled', log: s.m1Log[c.code] || '—',
+          toggle: function () { var n = Object.assign({}, self.state.m1); n[c.code] = !on; var lg = Object.assign({}, self.state.m1Log); lg[c.code] = (on ? 'Disabled' : 'Enabled') + ' by MFC on ' + nowStr().split(' ')[0]; self.setState({ m1: n, m1Log: lg }); self.flash('M-1 ' + (on ? 'disabled' : 'enabled') + ' for ' + c.code + ' · ' + c.name); } }; }),
+        windows: [CUR + 1, CUR + 2].map(function (d) { var dl = firstLmeWd(d - 1); var open = d === m1Target(); return { d: ml(d), deadline: 'On or before ' + dmy(dl) + ' (1st LME working day of ' + ml(d - 1) + ')', status: open ? 'Open now' : 'Closed', style: open ? 'color:#1B5E20;font-weight:600' : 'color:#8C1D18;font-weight:600' }; })
+      },
       applied: applied, exported: exported,
       goHome: goHome, homeProducts: homeProducts, pdp: pdpV, cartCount: s.cart.product ? 1 : 0, openCart: function () { self.setState({ tab: 'cart' }); },
       cartName: c.product ? (prodOf(c.product).vlabel && prodOf(c.product).vlabel[c.variant]) || c.variant : '', cartImg: c.product ? imgOfP(c.product, c.variant) : '', cartMou: c.mou, clearCart: function () { self.setState({ cart: emptyCart(), cartErr: '' }); self.flash('Product removed from cart'); },
@@ -1103,7 +1147,8 @@ class App extends React.Component {
       planBadgeStyle: initial ? 'background:#E8F5E9;color:#1B5E20;margin-bottom:8px' : 'background:#FFF4E5;color:#7A4A00;margin-bottom:8px',
       planNote: initial ? 'Submitted before the 2:00 PM cut-off on the 1st LME working day of ' + ml(D) + ', so this is an Initial Plan. Quantities of all codes under the same Group Code are added up and sent to SAP.' : 'The 2:00 PM cut-off on the 1st LME working day of ' + ml(CUR) + ' has passed, so this is an Additional Plan.',
       already: already, noAlready: already.length === 0, alreadyRows: alreadyRows,
-      rollInLabel: fmt(rollIn), prepInLabel: fmt(prepIn), carried: carried,
+      rollInLabel: fmt(rollIn), prepInLabel: fmt(prepIn), carried: carried, m1InLabel: fmt(m1In),
+      cartM1: !!c.m1, cartM1Note: c.m1 ? 'M-1 plan for ' + ml(c.delivery) + ' delivery · submit on or before ' + dmy(firstLmeWd(c.delivery - 1)) + ' (1st LME working day of ' + ml(c.delivery - 1) + ')' : '',
       netPhys: fmt(netPhys), netPrice: fmt(netPrice),
       physFormula: 'Default ' + fmt(def) + ' + Already Priced ' + fmt(A) + ' + Planned ' + fmt(qty),
       priceFormula: 'Planned ' + fmt(qty) + ' + Rollover ' + fmt(rollIn) + ' + Prepone ' + fmt(prepIn) + ' − Already Priced ' + fmt(A),
@@ -1382,6 +1427,10 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
       </div>` : html`<div class="muted" style="padding:28px 18px;font-size:14px">${v.pdp.otherNote}</div>`}
     </div>
     <div style="flex:1 1 300px;min-width:0;padding:4px 0">
+      ${v.pdp.m1On ? html`<div style="margin-bottom:20px">
+        <div style="font-size:16px;margin-bottom:8px">Plan Type</div>
+        <div class="seg" role="group" aria-label="Plan type"><button type="button" class=${v.pdp.regCls} aria-pressed=${v.pdp.isM1 ? 'false' : 'true'} onClick=${v.pdp.setRegular}>Regular Plan</button><button type="button" class=${v.pdp.m1Cls} aria-pressed=${v.pdp.isM1 ? 'true' : 'false'} onClick=${v.pdp.setM1}>M-1 Plan</button></div>
+      </div>` : null}
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
         <label for="pdpqty" style="font-size:16px">Quantity (MT)</label>
         <div style="display:flex;gap:8px;align-items:center">
@@ -1391,8 +1440,8 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         </div>
       </div>
       <label class="lbl" for="pdpdel" style="font-size:16px;margin:22px 0 8px">Delivery in</label>
-      <select id="pdpdel" class="inp" value=${v.pdp.delivery} onChange=${v.pdp.setDelivery} disabled=${v.pdp.tabOther}>${v.pdp.delivOpts.map(opt)}</select>
-      ${v.pdp.hasNote ? html`<div style="font-size:12px;color:#7A4A00;background:#FFF4E5;border-radius:4px;padding:8px 10px;margin-top:8px">${v.pdp.note}</div>` : null}
+      ${v.pdp.isM1 ? html`<div><input id="pdpdel" class="inp" readOnly value=${v.pdp.m1Month} /><div style="font-size:12px;color:#0B3D73;background:#E3F2FD;border-radius:4px;padding:8px 10px;margin-top:8px">${v.pdp.m1Note}</div></div>` : html`<select id="pdpdel" class="inp" value=${v.pdp.delivery} onChange=${v.pdp.setDelivery} disabled=${v.pdp.tabOther}>${v.pdp.delivOpts.map(opt)}</select>`}
+      ${v.pdp.hasNote && !v.pdp.isM1 ? html`<div style="font-size:12px;color:#7A4A00;background:#FFF4E5;border-radius:4px;padding:8px 10px;margin-top:8px">${v.pdp.note}</div>` : null}
       <button type="button" class="bigbtn" style="background:#3E7C17;margin-top:22px" onClick=${v.pdp.addToCart} disabled=${v.pdp.tabOther}>ADD TO CART</button>
       <button type="button" class="bigbtn" style="background:#0B5CAD;margin-top:16px" onClick=${v.pdp.planOrder} disabled=${v.pdp.tabOther}>PLAN ORDER</button>
     </div>
@@ -1420,12 +1469,20 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         </div>
         <div style="width:260px">
           <label class="lbl" for="cartdeliv">Delivery in</label>
-          <select id="cartdeliv" class="inp" value=${v.cartDeliv} onChange=${v.setDeliv}>${v.delivOpts.map(opt)}</select>
+          <select id="cartdeliv" class="inp" value=${v.cartDeliv} onChange=${v.setDeliv} disabled=${v.cartM1}>${v.delivOpts.map(opt)}</select>
         </div>
         <button type="button" class="icon-btn rm-prod" aria-label=${'Remove ' + v.cartName + ' from cart'} title="Remove from cart" onClick=${v.clearCart}>${TRASH}</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:24px;margin-top:20px;border-top:1px solid #DEE2E6;padding-top:20px">
         <section style="flex:1 1 360px;min-width:0">
+          ${v.cartM1 ? html`<div>
+            <h2 class="sec-h">M-1 Plan</h2>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px 16px">
+              <div><label class="lbl" for="m1q">Qty (MT)</label><input id="m1q" class="inp" readOnly value=${v.cart.qty} /></div>
+              <div><label class="lbl" for="m1t">Price Type</label><input id="m1t" class="inp" readOnly value="MOSS (M-1)" /></div>
+            </div>
+            <div style="font-size:13px;color:#0B3D73;background:#E3F2FD;border-radius:6px;padding:10px 12px;margin-top:14px">${v.cartM1Note}. Approval: ASM → RM. Not available for price booking.</div>
+          </div>` : html`<div>
           <h2 class="sec-h">Price Type Comparison</h2>
           ${v.rows.map(function (row) { return html`<div key=${row.qid} style="margin-bottom:14px">
             <div style="display:grid;grid-template-columns:96px minmax(0,1fr) minmax(0,1fr) 40px;gap:12px;align-items:end">
@@ -1436,6 +1493,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             </div>
           </div>`; })}
           <button type="button" class="btn btn-o" onClick=${v.addRow}>ADD ANOTHER PRICE TYPE</button>
+          </div>`}
         </section>
         <section class="split" style="flex:1 1 360px;min-width:0;border-left:1px solid #DEE2E6;padding-left:24px">
           <h2 class="sec-h">Defaults and carried-forward quantity</h2>
@@ -1452,6 +1510,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:18px">
             <div><label class="lbl" for="rin">Rollover (MT)</label><input id="rin" class="inp" readOnly value=${v.rollInLabel} /></div>
             <div><label class="lbl" for="pin">Preponement (MT)</label><input id="pin" class="inp" readOnly value=${v.prepInLabel} /></div>
+            <div><label class="lbl" for="m1in">M-1 (MT)</label><input id="m1in" class="inp" readOnly value=${v.m1InLabel} /></div>
           </div>
           ${v.carried.map(function (c) { return html`<div key=${c} class="muted" style="font-size:13px;margin-top:6px">${c}</div>`; })}
         </section>
@@ -1517,6 +1576,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           <div class="ln">Price Type: ${p.priceType}</div>
           <div class="ln">Delivery In: ${p.delivLabel}</div>
           <div class="ln">MoU No: ${p.mou}</div>
+          ${p.isM1 ? html`<div class="ln"><span class="badge" style="background:#E0F2F1;color:#00574B">M-1 Plan</span> <span class="muted" style="font-size:12px">${p.m1Sap}</span></div>` : null}
         </div>
         <div>${p.priceIn}</div>
         <div>${p.product}</div>
@@ -1584,6 +1644,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             <div class="ln">PO ID: <span style="color:#0B5CAD">${it.id}</span></div>
             <div class="ln">Delivery In: ${it.origin}</div>
             <div class="ln">MoU No: ${it.mou}</div>
+            ${it.isM1 ? html`<div class="ln"><span class="badge" style="background:#E0F2F1;color:#00574B">M-1 Plan</span></div>` : null}
             ${it.hasEff ? html`<div class="ln">${it.effLine}</div>` : null}
           </div>`}
         </div>
@@ -1605,6 +1666,23 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
   </div>` : null}
 
   ${v.vSupPB ? pbPage(v.pb) : null}
+
+  ${v.vM1 ? html`<div>
+    <p class="muted" style="font-size:14px;margin:-6px 0 16px">Only customers enabled here see the M-1 option. M-1 is a MOSS plan submitted one delivery month ahead; approval ASM → RM.</p>
+    <div class="card" style="overflow-x:auto;margin-bottom:20px"><div style="min-width:820px">
+      <div class="thead g-m1"><div>Customer ID</div><div>Customer Name</div><div>Region</div><div>Products</div><div>M-1 Access</div><div>Last Change</div></div>
+      ${v.m1Page.rows.map(function (r) { return html`<div key=${r.code} class="trow g-m1">
+        <div style="color:#0B5CAD;font-weight:600">${r.code}</div><div>${r.name}</div><div>${r.region}</div><div>${r.products}</div>
+        <div><button type="button" class=${'sw' + (r.on ? ' sw-on' : '')} role="switch" aria-checked=${r.on ? 'true' : 'false'} aria-label=${'M-1 access for ' + r.name} onClick=${r.toggle}><span></span></button> <span style="font-size:13px;margin-left:6px">${r.label}</span></div>
+        <div class="muted" style="font-size:13px">${r.log}</div>
+      </div>`; })}
+    </div></div>
+    <h2 style="font-size:17px;font-weight:700;margin:0 0 10px">M-1 submission window</h2>
+    <div class="card" style="overflow-x:auto"><div style="min-width:620px">
+      <div class="thead g-m1w"><div>Delivery Month</div><div>Submission Deadline</div><div>Status</div></div>
+      ${v.m1Page.windows.map(function (w) { return html`<div key=${w.d} class="trow g-m1w"><div>${w.d}</div><div>${w.deadline}</div><div style=${w.style}>${w.status}</div></div>`; })}
+    </div></div>
+  </div>` : null}
 
   ${v.vDash ? html`<div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px">
