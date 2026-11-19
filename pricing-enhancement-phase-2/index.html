@@ -877,7 +877,7 @@ class App extends React.Component {
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         physical: fmt(p.planned), pricing: fmt(k.pricing), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
         hasBlocked: k.blocked > 0, blocked: fmt(k.blocked), delivered: fmt(p.delivered),
-        hasPriceBy: ok && k.unpriced > 0, priceByLabel: due ? 'Must be priced in ' + ml(CUR) + ' (M+2 reached)' : 'Rollover allowed till: ' + ml(k.priceBy), priceByStyle: due ? 'background:#FDECEA;color:#8C1D18;margin-top:4px' : 'background:#E3F2FD;color:#0B3D73;margin-top:4px',
+        hasPriceBy: ok && k.unpriced > 0 && !p.m1, priceByLabel: due ? 'Must be priced in ' + ml(CUR) + ' (M+2 reached)' : 'Rollover allowed till: ' + ml(k.priceBy), priceByStyle: due ? 'background:#FDECEA;color:#8C1D18;margin-top:4px' : 'background:#E3F2FD;color:#0B3D73;margin-top:4px',
         created: p.created, status: st, statusColor: colorFor(st), isApproved: ok, notApproved: !ok,
         rollDis: !ok || p.deliv > CUR || k.available <= 0 || s.afterCutoff || rollOpts.length === 0 || !!p.m1,
         preDis: !ok || p.deliv <= CUR || k.available <= 0 || s.afterCutoff || !!p.m1, isM1: !!p.m1, m1Sap: ok ? 'Sent to SAP under the M-1 column' : 'Goes to SAP under the M-1 column once approved',
@@ -1594,8 +1594,8 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           ${p.isApproved ? html`<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
             <button type="button" class="lnk" onClick=${p.nyi}>Create Delivery</button>
             <button type="button" class="lnk" onClick=${p.nyi}>Proforma Invoice</button>
-            <button type="button" class="lnk" onClick=${p.openPre} disabled=${p.preDis}>Preponement</button>
-            <button type="button" class="lnk" onClick=${p.openRoll} disabled=${p.rollDis}>Rollover</button>
+            ${p.isM1 ? null : html`<button type="button" class="lnk" onClick=${p.openPre} disabled=${p.preDis}>Preponement</button>`}
+            ${p.isM1 ? null : html`<button type="button" class="lnk" onClick=${p.openRoll} disabled=${p.rollDis}>Rollover</button>`}
           </div>` : html`<span>–</span>`}
           ${p.hasHint ? html`<div style=${'font-size:12px;margin-top:4px;color:' + p.hintColor}>${p.hint}</div>` : null}
         </div>
