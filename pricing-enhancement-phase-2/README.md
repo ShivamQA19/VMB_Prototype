@@ -24,6 +24,7 @@ Sign in with any account below (password **demo123** for all), or click a demo-u
 - **ASM exception:** rollover beyond M+2 (up to M+12) with a mandatory Mail/PDF attachment (max 10 MB).
 - **Planned orders:** ASM → RM. RM is the final approver and can enter an Effective Date (optional) and Additional Premium; Select All supports bulk approval.
 - **Manual pricing (HZL direct):** ASM enters, CSA approves (maker–checker). Backdating within the current month only; cannot exceed the unpriced balance.
+- **Price Booking entries:** when a planned order is finally approved, an entry for its quantity opens on the customer's Price Bookings page (Open for pricing) with **Book Price**. An approved rollover or preponement moves its quantity out of the parent PO's entry into its own entry for the selected month (parent PO shown), and the PO's Net Pricing Qty drops by the same amount. Quantity on a pending request is blocked from booking. Entries for a future month open in that month. Bookings follow the approval matrix: Day CSP / Period Average / BDA → RFM → CSA → Treasury; Spot – Target → RFM; Spot – Screen → RFM → customer confirmation; Monthly Average needs no approval.
 - **Supplier Price Bookings** lists only plans that already have pricing. **Dashboard** and **Exception Report** (SAP vs VMB) follow the BRD columns.
 
 Demo data only, no external libraries. Open `index.html` in a browser; **Reset data** restores the sample orders.

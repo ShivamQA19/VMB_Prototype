@@ -28,7 +28,8 @@ a{color:#0B5CAD}a:hover{color:#08427D}
 .g-po{grid-template-columns:150px 1.7fr 0.8fr 1.1fr 1.5fr 1fr 1.1fr 1.3fr}
 .g-spo{grid-template-columns:44px 1.3fr 2fr 0.8fr 1.1fr 1.4fr 1fr 1.4fr 1.1fr}
 .chk{width:20px;height:20px;cursor:pointer;accent-color:#0B5CAD;margin:0}
-.g-cpb{grid-template-columns:repeat(12,minmax(0,1fr))}
+.g-cpb{grid-template-columns:repeat(13,minmax(0,1fr))}
+.g-open{grid-template-columns:1.2fr 1.1fr 1.4fr 0.9fr 0.9fr 0.8fr 0.8fr 1fr}
 .g-spb{grid-template-columns:repeat(11,minmax(0,1fr))}
 .g-dash{grid-template-columns:repeat(16,minmax(0,1fr))}
 .g-exc{grid-template-columns:70px 1.4fr 1fr 1fr 1.1fr 0.8fr 0.8fr 0.8fr 2fr 1fr 1fr}
@@ -313,6 +314,12 @@ var SESSION_KEY = 'vmb-pricing-p2-user';
 function loadUser() { try { var u = window.localStorage.getItem(SESSION_KEY); return ACCOUNTS[u] ? u : null; } catch (e) { return null; } }
 function saveUser(u) { try { if (u) window.localStorage.setItem(SESSION_KEY, u); else window.localStorage.removeItem(SESSION_KEY); } catch (e) {} }
 function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : 'po', supStatus: 'all' }; }
+var BOOK_TYPES = ['Day CSP', 'Monthly Average', 'Spot – Screen', 'Spot – Target', 'BDA', 'Period Average'];
+var BOOK_CHAIN = { 'Day CSP': ['RFM', 'CSA', 'Treasury'], 'Period Average': ['RFM', 'CSA', 'Treasury'], 'BDA': ['RFM', 'CSA', 'Treasury'], 'Spot – Target': ['RFM'], 'Spot – Screen': ['RFM', 'Customer'], 'Monthly Average': [] };
+function lineOf(b) { return b.line || b.po; }
+function bookStatusFor(chain, stage) { if (stage >= chain.length) return 'Approved'; return chain[stage] === 'Customer' ? 'Customer Confirmation Pending' : chain[stage] + ' Approval Pending'; }
+function isPendingB(b) { return b.status !== 'Approved' && b.status.indexOf('Rejected') !== 0 && b.status.indexOf('To be priced') !== 0; }
+function pmOf(p) { return p.pm != null ? p.pm : (p.priceInLbl ? CUR : p.deliv); }
 function prodOf(id) { return PRODUCTS.find(function (p) { return p.id === id; }); }
 function imgOfP(id, variant) { var p = prodOf(id); return IMG[(p.vimg && p.vimg[variant]) || p.img]; }
 function emptyCart() { return { product: null, variant: '', mou: MOUS[0], delivery: CUR, qty: '0', rows: [{ qty: '0', type: 'Day CSP', priceIn: CUR }], cd: '0', hd: '0', already: {} }; }
@@ -359,7 +366,6 @@ function seedState(){
     bookings: [
       { id: 'PB-480', po: 'MOG100018150', qty: 120, type: 'Day CSP', priceMonth: 8, lme: '7,912.40', at: '14/09/2026 04:30 PM', status: 'Approved', source: 'VMB', sc: '', cb: '', by: '', seq: 12 },
       { id: 'PB-488', po: 'MOG100018163', qty: 40, type: 'Day CSP', priceMonth: 9, lme: '8,015.25', at: '12/10/2026 04:30 PM', status: 'Approved', source: 'VMB', sc: '', cb: '', by: '', seq: 22 },
-      { id: 'PB-496', po: 'MOG100018163', qty: 20, type: 'Day CSP', priceMonth: 11, lme: '—', at: '—', status: 'To be priced in Dec (2026)', source: 'Rollover', sc: '10.00', cb: '3.125', by: '', seq: 36 },
       { id: 'PB-497', po: 'MOG100018170', qty: 50, type: 'Spot – Screen', priceMonth: 10, lme: '8,061.75', at: '05/11/2026 11:42:18 AM', status: 'Approved', source: 'VMB', sc: '', cb: '', by: '', seq: 42 },
       { id: 'PB-498', po: 'MOG100018171', qty: 50, type: 'Day CSP', priceMonth: 10, lme: '9,040.30', at: '04/11/2026 04:30 PM', status: 'Approved', source: 'VMB', sc: '', cb: '', by: '', seq: 46 },
       { id: 'PB-495', po: 'MOG100018168', qty: 50, type: 'Day CSP', priceMonth: 10, lme: '8,072.10', at: '06/11/2026 04:30 PM', status: 'Approved', source: 'VMB (PNDL)', sc: '12.00', cb: '4.250', by: '', seq: 56 }
@@ -411,12 +417,16 @@ class App extends React.Component {
   poById(id) { return this.state.pos.find(function (p) { return p.id === id; }); }
   calc(p) {
     var s = this.state;
-    var priced = s.bookings.filter(function (b) { return b.po === p.id && b.status === 'Approved' && b.source !== 'Rollover'; }).reduce(function (a, b) { return a + b.qty; }, 0);
-    var rolled = s.reqs.filter(function (r) { return r.po === p.id && r.type === 'Rollover' && r.stage >= 5 && !r.rejectedBy; }).reduce(function (a, r) { return a + r.qty; }, 0);
-    var blocked = s.reqs.filter(function (r) { return r.po === p.id && r.stage < 5 && !r.rejectedBy; }).reduce(function (a, r) { return a + r.qty; }, 0)
-      + s.bookings.filter(function (b) { return b.po === p.id && b.status === 'CSA Approval Pending'; }).reduce(function (a, b) { return a + b.qty; }, 0);
-    var unpriced = Math.max(0, p.planned - priced - rolled);
-    return { priced: priced, rolled: rolled, blocked: blocked, unpriced: unpriced, available: Math.max(0, unpriced - blocked), priceBy: Math.min(p.deliv + 2, p.mouExp) };
+    var onLine = s.bookings.filter(function (b) { return lineOf(b) === p.id; });
+    var priced = onLine.filter(function (b) { return b.status === 'Approved'; }).reduce(function (a, b) { return a + b.qty; }, 0);
+    var pendingB = onLine.filter(isPendingB).reduce(function (a, b) { return a + b.qty; }, 0);
+    var appr = s.reqs.filter(function (r) { return r.po === p.id && r.stage >= 5 && !r.rejectedBy; });
+    var rolled = appr.filter(function (r) { return r.type === 'Rollover'; }).reduce(function (a, r) { return a + r.qty; }, 0);
+    var preponed = appr.filter(function (r) { return r.type === 'Preponement'; }).reduce(function (a, r) { return a + r.qty; }, 0);
+    var blocked = s.reqs.filter(function (r) { return r.po === p.id && r.stage < 5 && !r.rejectedBy; }).reduce(function (a, r) { return a + r.qty; }, 0) + pendingB;
+    var pricing = Math.max(0, p.planned - rolled - preponed);
+    var unpriced = Math.max(0, pricing - priced);
+    return { priced: priced, rolled: rolled, preponed: preponed, pricing: pricing, pendingB: pendingB, blocked: blocked, unpriced: unpriced, available: Math.max(0, unpriced - blocked), priceBy: Math.min(p.deliv + 2, p.mouExp) };
   }
   poStatus(p) { if (p.rejectedBy) return 'Cancelled by ' + p.rejectedBy; if (p.stage >= 2) return 'Approved'; return p.stage === 0 ? 'Created' : 'RM Approval Pending'; }
   reqStatus(r) { if (r.rejectedBy) return 'Rejected by ' + r.rejectedBy; if (r.stage >= 5) return 'Approved'; return CHAIN[r.stage] + ' Approval Pending'; }
@@ -476,12 +486,6 @@ class App extends React.Component {
     if (s.role === 'Treasury') nr.bw = String(f.bw).trim();
     var reqs = s.reqs.map(function (x) { return x.id === r.id ? nr : x; });
     var bookings = s.bookings; var seq = s.seq;
-    if (nr.stage >= 5) {
-      seq = seq + 1;
-      var p = this.poById(r.po);
-      var lme = p.product.indexOf('ZINC') >= 0 ? '9,051.65' : '8,099.65';
-      bookings = bookings.concat([{ id: 'PB-' + (400 + seq), po: r.po, qty: r.qty, type: r.priceType, priceMonth: r.month, lme: r.type === 'Rollover' ? '—' : lme, at: r.type === 'Rollover' ? '—' : nowStr(), status: r.type === 'Rollover' ? 'To be priced in ' + ml(r.month) : 'Approved', source: r.type, sc: nr.sc, cb: nr.bw, by: '', seq: seq }]);
-    }
     this.setState({ reqs: reqs, bookings: bookings, seq: seq, modal: null, form: {} });
     if (nr.stage >= 5) self.flash(r.type + ' approved · entry created on Price Booking for ' + ml(r.month) + ' · approval email sent to customer');
     else self.flash('Approved · status: ' + CHAIN[nr.stage] + ' Approval Pending · email sent to ' + CHAIN[nr.stage]);
@@ -495,8 +499,8 @@ class App extends React.Component {
       return this.flash('Plan cancelled · customer notified');
     }
     if (md.target === 'booking') {
-      this.setState({ bookings: s.bookings.map(function (b) { return b.id === md.id ? Object.assign({}, b, { status: 'Rejected by CSA' }) : b; }), modal: null, form: {} });
-      return this.flash('Manual entry rejected · ASM notified');
+      this.setState({ bookings: s.bookings.map(function (b) { return b.id === md.id ? Object.assign({}, b, { status: 'Rejected by ' + s.role, reason: reason }) : b; }), modal: null, form: {} });
+      return this.flash('Price booking rejected · quantity released for pricing again');
     }
     this.setState({ reqs: s.reqs.map(function (r) { return r.id === md.id ? Object.assign({}, r, { rejectedBy: s.role, reason: reason }) : r; }), modal: null, form: {} });
     this.flash('Request rejected · blocked quantity released to the customer for pricing');
@@ -511,13 +515,56 @@ class App extends React.Component {
     if (!(parseFloat(String(f.lme).replace(/,/g, '')) > 0)) return this.setForm({ err: 'Enter the LME price.' });
     if (!f.date || f.date < '2026-11-01' || f.date > '2026-11-11') return this.setForm({ err: 'Booking date must be within the current month (up to today).' });
     var parts = f.date.split('-'); var seq = s.seq + 1;
-    var b = { id: 'PB-' + (400 + seq), po: f.po, qty: q, type: f.type, priceMonth: CUR, lme: fmt(parseFloat(String(f.lme).replace(/,/g, ''))), at: parts[2] + '/' + parts[1] + '/' + parts[0] + ' ' + (f.time || ''), status: 'CSA Approval Pending', source: 'Manual (HZL)', sc: '', cb: '', by: 'Entered by ASM', seq: seq };
+    var b = { id: 'PB-' + (400 + seq), po: f.po, qty: q, type: f.type, priceMonth: CUR, lme: fmt(parseFloat(String(f.lme).replace(/,/g, ''))), at: parts[2] + '/' + parts[1] + '/' + parts[0] + ' ' + (f.time || ''), status: 'CSA Approval Pending', chain: ['CSA'], stage: 0, source: 'Manual (HZL)', sc: '', cb: '', by: 'Entered by ASM', seq: seq };
     this.setState({ bookings: s.bookings.concat([b]), seq: seq, modal: null, form: {} });
     this.flash('Manual entry ' + b.id + ' sent to CSA for approval');
   }
   approveBooking(id) {
-    this.setState({ bookings: this.state.bookings.map(function (b) { return b.id === id ? Object.assign({}, b, { status: 'Approved', by: 'Entered by ASM · approved by CSA' }) : b; }) });
-    this.flash('Manual pricing approved · now visible to the customer');
+    var s = this.state; var b0 = s.bookings.find(function (b) { return b.id === id; });
+    var chain = b0.chain || ['CSA']; var stage = (b0.stage || 0) + 1; var st = bookStatusFor(chain, stage);
+    var extra = { stage: stage, status: st };
+    if (st === 'Approved' && b0.source === 'Manual (HZL)') extra.by = 'Entered by ASM · approved by CSA';
+    if (st === 'Approved' && b0.lme === '—') { var bp = this.poById(b0.po); extra.lme = bp.product.indexOf('ZINC') >= 0 ? '9,051.65' : '8,099.65'; }
+    this.setState({ bookings: s.bookings.map(function (b) { return b.id === id ? Object.assign({}, b, extra) : b; }) });
+    if (b0.source === 'Manual (HZL)') this.flash('Manual pricing approved · now visible to the customer');
+    else this.flash(st === 'Approved' ? 'Price booking ' + id + ' approved · customer notified' : 'Approved · status: ' + st);
+  }
+  pricingLines(cust) {
+    var self = this; var s = this.state; var out = [];
+    s.pos.forEach(function (p) {
+      if (cust && p.cust !== cust) return;
+      if (self.poStatus(p) !== 'Approved' || p.planned <= 0) return;
+      var k = self.calc(p);
+      out.push({ key: p.id, kind: 'Planned Order', parent: p.id, p: p, month: pmOf(p), qty: k.pricing, booked: k.priced + k.pendingB, priced: k.priced, sc: '', cb: '', priceType: p.priceType, seq: p.seq, moved: k.rolled + k.preponed, held: k.blocked - k.pendingB });
+    });
+    s.reqs.forEach(function (r) {
+      var p = self.poById(r.po); if (!p || (cust && p.cust !== cust) || r.stage < 5 || r.rejectedBy) return;
+      var onL = s.bookings.filter(function (b) { return lineOf(b) === r.id; });
+      var priced = onL.filter(function (b) { return b.status === 'Approved'; }).reduce(function (a, b) { return a + b.qty; }, 0);
+      var pend = onL.filter(isPendingB).reduce(function (a, b) { return a + b.qty; }, 0);
+      out.push({ key: r.id, kind: r.type, parent: r.po, p: p, month: r.month, qty: r.qty, booked: priced + pend, priced: priced, sc: r.sc, cb: r.bw, priceType: r.priceType, seq: r.seq, moved: 0, held: 0 });
+    });
+    return out.sort(function (a, b) { return b.seq - a.seq; });
+  }
+  openBook(key) {
+    var ln = this.pricingLines('777').find(function (l) { return l.key === key; });
+    var t = BOOK_TYPES.find(function (x) { return String(ln.priceType).indexOf(x) === 0; }) || 'Day CSP';
+    this.setState({ modal: { kind: 'book', key: key }, form: { qty: String(Math.max(0, ln.qty - ln.booked - ln.held)), type: t, err: '' } });
+  }
+  submitBook() {
+    var s = this.state; var key = s.modal.key; var f = s.form;
+    var ln = this.pricingLines('777').find(function (l) { return l.key === key; });
+    var bal = ln.qty - ln.booked - ln.held; var q = parseFloat(f.qty);
+    if (!(q > 0)) return this.setForm({ err: 'Enter a quantity greater than 0.' });
+    if (q > bal + 1e-9) return this.setForm({ err: 'Quantity cannot exceed the balance of ' + fmt(bal) + ' MT on this entry.' });
+    var chain = BOOK_CHAIN[f.type] || ['RFM', 'CSA', 'Treasury']; var st = bookStatusFor(chain, 0);
+    var spot = f.type.indexOf('Spot') === 0; var zinc = ln.p.product.indexOf('ZINC') >= 0;
+    var seq = s.seq + 1;
+    var d = new Date(); var at = spot ? nowStr().replace(/ (AM|PM)$/, ':' + pad(d.getSeconds()) + ' $1') : nowStr();
+    var b = { id: 'PB-' + (400 + seq), po: ln.parent, line: key, qty: q, type: f.type, priceMonth: ln.month, lme: (spot || st === 'Approved') ? (zinc ? '9,051.65' : '8,099.65') : '—', at: at, status: st, chain: chain, stage: 0,
+      source: ln.kind === 'Planned Order' ? 'VMB' : ln.kind, sc: ln.sc || '', cb: ln.cb || '', by: '', seq: seq };
+    this.setState({ bookings: s.bookings.concat([b]), seq: seq, modal: null, form: {} });
+    this.flash('Price booking ' + b.id + ' created for ' + fmt(q) + ' MT · ' + (st === 'Approved' ? 'Approved' : st));
   }
   navModel(isCust, pending) {
     var self = this; var s = this.state; var t = s.tab; var g = s.navGroups || {};
@@ -686,7 +733,7 @@ class App extends React.Component {
       return {
         isReq: false, seq: p.seq, id: p.id, kind: p.kind, priceType: p.priceType, delivLabel: ml(p.deliv), mou: p.mou, reqLines: reqLines,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
-        physical: fmt(p.planned), pricing: fmt(p.planned - k.rolled), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
+        physical: fmt(p.planned), pricing: fmt(k.pricing), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
         hasBlocked: k.blocked > 0, blocked: fmt(k.blocked), delivered: fmt(p.delivered),
         hasPriceBy: ok && k.unpriced > 0, priceByLabel: 'Price by: ' + ml(k.priceBy), priceByStyle: due ? 'background:#FDECEA;color:#8C1D18;margin-top:4px' : 'background:#E3F2FD;color:#0B3D73;margin-top:4px',
         created: p.created, status: st, statusColor: colorFor(st), isApproved: ok, notApproved: !ok,
@@ -717,12 +764,22 @@ class App extends React.Component {
       return {
         id: b.id, po: b.po, type: b.type, pm: ml(b.priceMonth), deliv: ml(p.deliv), qty: fmt(b.qty), lme: b.lme, sc: b.sc || '—', cb: b.cb || '—', at: b.at,
         source: b.source, sourceStyle: sourceStyle(b.source), status: b.status, statusColor: colorFor(b.status), enteredBy: b.by,
-        canAct: role === 'CSA' && b.status === 'CSA Approval Pending', noAct: !(role === 'CSA' && b.status === 'CSA Approval Pending'),
-        approve: function () { self.approveBooking(b.id); },
+        canAct: !!b.chain && isPendingB(b) && b.chain[b.stage || 0] === role && role !== 'Customer', noAct: !(!!b.chain && isPendingB(b) && b.chain[b.stage || 0] === role && role !== 'Customer'),
+        canConfirm: role === 'Customer' && b.status === 'Customer Confirmation Pending', hasEntry: lineOf(b) !== b.po, entryId: lineOf(b), entry: lineOf(b) === b.po ? b.po : lineOf(b) + ' (' + b.source + ')',
+        approve: function () { self.approveBooking(b.id); }, confirm: function () { self.approveBooking(b.id); },
         reject: function () { self.setState({ modal: { kind: 'reject', target: 'booking', id: b.id }, form: { reason: '', err: '' } }); }
       };
     };
-    var custPB = myBookings.filter(function (b) { return b.status !== 'CSA Approval Pending' && b.status.indexOf('Rejected') !== 0; }).slice().sort(function (a, b) { return b.seq - a.seq; }).map(bookingView);
+    var custPB = myBookings.filter(function (b) { return !(b.source === 'Manual (HZL)' && b.status !== 'Approved'); }).slice().sort(function (a, b) { return b.seq - a.seq; }).map(bookingView);
+    var custLines = this.pricingLines('777').map(function (ln) {
+      var bal = Math.max(0, ln.qty - ln.booked - ln.held); var open = ln.month <= CUR;
+      return { key: ln.key, kind: ln.kind, isPO: ln.kind === 'Planned Order', parent: ln.parent, product: ln.p.product, month: ml(ln.month), qty: fmt(ln.qty), booked: fmt(ln.booked), balance: fmt(bal),
+        hasMoved: ln.moved > 0, movedLine: 'Planned ' + fmt(ln.p.planned) + ' − rolled over / preponed ' + fmt(ln.moved),
+        hasHeld: ln.held > 0, heldLine: fmt(ln.held) + ' MT blocked until the rollover / preponement request is approved',
+        canBook: open && bal > 0, note: bal <= 0 ? 'Fully booked' : (open ? '' : 'Opens in ' + ml(ln.month)),
+        tagStyle: ln.kind === 'Planned Order' ? 'background:#E3F2FD;color:#0B3D73' : 'background:#EDE7F6;color:#4527A0',
+        book: function () { self.openBook(ln.key); } };
+    });
     var pbGroups = s.pos.filter(function (p) { return s.bookings.some(function (b) { return b.po === p.id; }); }).slice().sort(function (a, b) { return b.seq - a.seq; }).map(function (p) {
       var k = self.calc(p);
       return { id: p.id, cust: p.cust + ' · ' + p.custName, product: p.product, deliv: ml(p.deliv), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
@@ -759,7 +816,7 @@ class App extends React.Component {
         hasEff: !!p.rmDone, effLine: (p.eff ? 'Effective Date: ' + p.eff + ' · ' : '') + 'Additional Premium: ' + (p.prem || '0.00'),
         isReq: false, isPo: true, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
-        qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(p.planned - k.rolled), 'Planned : ' + fmt(p.planned), 'Delivered : ' + fmt(p.delivered)],
+        qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(k.pricing), 'Planned : ' + fmt(p.planned), 'Delivered : ' + fmt(p.delivered)],
         created: p.created, status: st, statusColor: colorFor(st), hasTrail: false, trail: '',
         actionable: act, rejectLabel: 'Cancel', canException: canEx, noAction: !act && !canEx,
         approve: function () { self.setState({ modal: { kind: 'approve', target: 'po', id: p.id }, form: { eff: '', prem: '0', err: '' } }); },
@@ -856,6 +913,18 @@ class App extends React.Component {
         };
       }
     }
+    var mb = {};
+    if (md && md.kind === 'book') {
+      var bl = this.pricingLines('777').find(function (l) { return l.key === md.key; });
+      var chainPreview = BOOK_CHAIN[f.type] || ['RFM', 'CSA', 'Treasury'];
+      mb = { entry: bl.key, kind: bl.kind, parent: bl.parent, product: bl.p.product, month: ml(bl.month), balance: fmt(bl.qty - bl.booked - bl.held),
+        typeOpts: BOOK_TYPES.map(function (t) { return { v: t, l: t }; }),
+        flow: chainPreview.length ? 'Approval: ' + chainPreview.join(' → ') : 'No approval needed for Monthly Average',
+        hasErr: !!f.err,
+        setQty: function (e) { self.setForm({ qty: e.target.value, err: '' }); },
+        setType: function (e) { self.setForm({ type: e.target.value }); },
+        submit: function () { self.submitBook(); } };
+    }
     var mj = {};
     if (md && md.kind === 'reject') {
       var titles = { po: ['Cancel Plan ' + md.id, 'The customer is notified by email.', 'Cancel Plan'], req: ['Reject request ' + md.id, 'The blocked quantity is released to the customer for pricing. The customer and ASM are notified by email.', 'Reject'], booking: ['Reject manual entry ' + md.id, 'The ASM who entered it is notified.', 'Reject'] };
@@ -922,7 +991,7 @@ class App extends React.Component {
       physFormula: 'Default ' + fmt(def) + ' + Already Priced ' + fmt(A) + ' + Planned ' + fmt(qty),
       priceFormula: 'Planned ' + fmt(qty) + ' + Rollover ' + fmt(rollIn) + ' + Prepone ' + fmt(prepIn) + ' − Already Priced ' + fmt(A),
       planOrder: function () { self.planOrder(); }, hasCartErr: !!s.cartErr, cartErr: s.cartErr,
-      custPOs: custPOs, custPB: custPB,
+      custPOs: custPOs, custPB: custPB, custLines: custLines, noCustLines: custLines.length === 0,
       supItems: supItems, supCount: supItems.length, supEmpty: supItems.length === 0, pendingCount: pendingCount,
       supStatus: s.supStatus, supType: s.supType, statusOpts: statusOpts, typeOpts: typeOpts,
       setSupStatus: function (e) { self.setState({ supStatus: e.target.value }); },
@@ -937,7 +1006,7 @@ class App extends React.Component {
       form: f, closeModal: function () { self.closeModal(); },
       mReq: !!(md && md.kind === 'req'), mr: mr,
       mApprove: !!(md && md.kind === 'approve'), ma: ma,
-      mReject: !!(md && md.kind === 'reject'), mj: mj,
+      mReject: !!(md && md.kind === 'reject'), mj: mj, mBook: !!(md && md.kind === 'book'), mb: mb,
       mManual: !!(md && md.kind === 'manual'), mm: mm
     };
   }
@@ -1269,10 +1338,29 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
     </div></div>
   </div>` : null}
 
-  ${v.vCustPB ? html`<div class="card" style="overflow-x:auto"><div style="min-width:1300px">
-    <div class="thead g-cpb"><div>Booking ID</div><div>PO ID</div><div>Price Type</div><div>Pricing Month</div><div>Delivery Month</div><div>Qty (MT)</div><div>LME (USD/MT)</div><div>Service Charge (USD/MT)</div><div>Contango / Backwardation (USD/MT)</div><div>Booked At</div><div>Source</div><div>Status</div></div>
-    ${v.custPB.map(function (b) { return html`<div key=${b.id} class="trow g-cpb"><div>${b.id}</div><div style="color:#0B5CAD">${b.po}</div><div>${b.type}</div><div>${b.pm}</div><div>${b.deliv}</div><div>${b.qty}</div><div>${b.lme}</div><div>${b.sc}</div><div>${b.cb}</div><div>${b.at}</div><div><span class="badge" style=${b.sourceStyle}>${b.source}</span></div><div style=${'color:' + b.statusColor}>● ${b.status}</div></div>`; })}
-  </div></div>` : null}
+  ${v.vCustPB ? html`<div>
+    <h2 style="font-size:17px;font-weight:700;margin:0 0 6px">Open for pricing</h2>
+    <p class="muted" style="font-size:13px;margin:0 0 12px">An entry is created when a planned order is approved, and when a rollover or preponement is approved. Book prices against the balance.</p>
+    <div class="card" style="overflow-x:auto;margin-bottom:24px"><div style="min-width:1100px">
+      <div class="thead g-open"><div>Entry</div><div>Parent PO ID</div><div>Product</div><div>Pricing Month</div><div>Pricing Qty (MT)</div><div>Booked (MT)</div><div>Balance (MT)</div><div>Action</div></div>
+      ${v.custLines.map(function (l) { return html`<div key=${l.key} class="trow g-open">
+        <div><div style="color:#0B5CAD;font-weight:500">${l.key}</div><span class="badge" style=${l.tagStyle + ';margin-top:6px'}>${l.kind}</span></div>
+        <div style="color:#0B5CAD">${l.parent}</div>
+        <div>${l.product}</div>
+        <div>${l.month}</div>
+        <div><div style="font-weight:600">${l.qty}</div>${l.hasMoved ? html`<div class="muted" style="font-size:12px;margin-top:4px">${l.movedLine}</div>` : null}</div>
+        <div>${l.booked}</div>
+        <div><div style="font-weight:600">${l.balance}</div>${l.hasHeld ? html`<div style="font-size:12px;margin-top:4px;color:#7A4A00">${l.heldLine}</div>` : null}</div>
+        <div>${l.canBook ? html`<button type="button" class="btn" style="height:36px;padding:0 14px" onClick=${l.book}>BOOK PRICE</button>` : html`<span class="muted" style="font-size:13px">${l.note}</span>`}</div>
+      </div>`; })}
+      ${v.noCustLines ? html`<div class="muted" style="padding:24px;text-align:center">No approved planned orders yet.</div>` : null}
+    </div></div>
+    <h2 style="font-size:17px;font-weight:700;margin:0 0 12px">Price bookings</h2>
+    <div class="card" style="overflow-x:auto"><div style="min-width:1400px">
+    <div class="thead g-cpb"><div>Booking ID</div><div>PO ID</div><div>Price Type</div><div>Pricing Month</div><div>Delivery Month</div><div>Qty (MT)</div><div>LME (USD/MT)</div><div>Service Charge (USD/MT)</div><div>Contango / Backwardation (USD/MT)</div><div>Booked At</div><div>Source</div><div>Status</div><div>Action</div></div>
+    ${v.custPB.map(function (b) { return html`<div key=${b.id} class="trow g-cpb"><div>${b.id}${b.hasEntry ? html`<div class="muted" style="font-size:12px;margin-top:4px">Entry: ${b.entryId}</div>` : null}</div><div style="color:#0B5CAD">${b.po}</div><div>${b.type}</div><div>${b.pm}</div><div>${b.deliv}</div><div>${b.qty}</div><div>${b.lme}</div><div>${b.sc}</div><div>${b.cb}</div><div>${b.at}</div><div><span class="badge" style=${b.sourceStyle}>${b.source}</span></div><div style=${'color:' + b.statusColor}>● ${b.status}</div><div>${b.canConfirm ? html`<button type="button" class="lnk" onClick=${b.confirm}>✓ Confirm</button>` : html`<span>–</span>`}</div></div>`; })}
+    </div></div>
+  </div>` : null}
 
   ${v.vSupPO ? html`<div>
     <div class="card" style="padding:16px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin-bottom:16px">
@@ -1342,7 +1430,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         <span style="color:#0B5CAD;font-weight:700">${g.id}</span><span>${g.cust}</span><span>${g.product}</span><span>Delivery: ${g.deliv}</span><span>Planned: ${g.planned}</span><span>Priced: ${g.priced}</span><span style="font-weight:500">Unpriced: ${g.unpriced}</span>
       </div>
       <div class="thead g-spb" style="font-size:13px"><div>Booking ID</div><div>Price Type</div><div>Pricing Month</div><div>Qty (MT)</div><div>LME (USD/MT)</div><div>Service Charge</div><div>C / B</div><div>Booked At</div><div>Source</div><div>Status</div><div>Action</div></div>
-      ${g.lines.map(function (b) { return html`<div key=${b.id} class="trow g-spb" style="font-size:13px"><div>${b.id}</div><div>${b.type}</div><div>${b.pm}</div><div>${b.qty}</div><div>${b.lme}</div><div>${b.sc}</div><div>${b.cb}</div><div>${b.at}</div><div><span class="badge" style=${b.sourceStyle}>${b.source}</span><div class="muted" style="font-size:12px;margin-top:4px">${b.enteredBy}</div></div><div style=${'color:' + b.statusColor}>● ${b.status}</div>
+      ${g.lines.map(function (b) { return html`<div key=${b.id} class="trow g-spb" style="font-size:13px"><div>${b.id}${b.hasEntry ? html`<div class="muted" style="font-size:12px;margin-top:4px">Entry: ${b.entryId}</div>` : null}</div><div>${b.type}</div><div>${b.pm}</div><div>${b.qty}</div><div>${b.lme}</div><div>${b.sc}</div><div>${b.cb}</div><div>${b.at}</div><div><span class="badge" style=${b.sourceStyle}>${b.source}</span><div class="muted" style="font-size:12px;margin-top:4px">${b.enteredBy}</div></div><div style=${'color:' + b.statusColor}>● ${b.status}</div>
         <div>${b.canAct ? html`<div><button type="button" class="lnk" onClick=${b.approve}>✓ Approve</button><br /><button type="button" class="lnk" onClick=${b.reject}>✕ Reject</button></div>` : html`<span>–</span>`}</div></div>`; })}
     </div></div>`; })}
   </div>` : null}
@@ -1424,6 +1512,22 @@ ${v.mReject ? overlay('mrjt', 480, html`<div>
   <textarea id="mjr" class="inp" style="height:90px;padding:10px" value=${f.reason || ''} onChange=${v.mj.setReason}></textarea>
   ${v.mj.hasErr ? html`<div class="err" role="alert">${f.err}</div>` : null}
   ${mFoot(v.mj.cta, v.mj.submit, true)}
+</div>`) : null}
+
+${v.mBook ? overlay('mbt', 520, html`<div>
+  ${mHead('mbt', 'Book Price')}
+  <div style="background:#F5F7FA;border-radius:6px;padding:12px 14px;margin:16px 0;font-size:13px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px">
+    <div>Entry: <b>${v.mb.entry}</b> (${v.mb.kind})</div><div>Parent PO ID: ${v.mb.parent}</div>
+    <div>Product: ${v.mb.product}</div><div>Pricing Month: ${v.mb.month}</div>
+    <div>Balance: <b>${v.mb.balance} MT</b></div>
+  </div>
+  <label class="lbl" for="mbq">Quantity (MT)</label>
+  <input id="mbq" class="inp" inputMode="decimal" value=${f.qty || ''} onChange=${v.mb.setQty} />
+  <label class="lbl" for="mbt2" style="margin-top:14px">Price Type</label>
+  <select id="mbt2" class="inp" value=${f.type} onChange=${v.mb.setType}>${v.mb.typeOpts.map(opt)}</select>
+  <div class="muted" style="font-size:12px;margin-top:12px">${v.mb.flow}</div>
+  ${v.mb.hasErr ? html`<div class="err" role="alert">${f.err}</div>` : null}
+  ${mFoot('Book Price', v.mb.submit)}
 </div>`) : null}
 
 ${v.mManual ? overlay('mmt', 560, html`<div>
