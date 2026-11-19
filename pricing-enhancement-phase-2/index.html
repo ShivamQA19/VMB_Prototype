@@ -838,7 +838,7 @@ class App extends React.Component {
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         physical: fmt(p.planned), pricing: fmt(k.pricing), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
         hasBlocked: k.blocked > 0, blocked: fmt(k.blocked), delivered: fmt(p.delivered),
-        hasPriceBy: ok && k.unpriced > 0, priceByLabel: 'Price by: ' + ml(k.priceBy), priceByStyle: due ? 'background:#FDECEA;color:#8C1D18;margin-top:4px' : 'background:#E3F2FD;color:#0B3D73;margin-top:4px',
+        hasPriceBy: ok && k.unpriced > 0, priceByLabel: due ? 'Must be priced in ' + ml(CUR) + ' (M+2 reached)' : 'Rollover allowed till: ' + ml(k.priceBy), priceByStyle: due ? 'background:#FDECEA;color:#8C1D18;margin-top:4px' : 'background:#E3F2FD;color:#0B3D73;margin-top:4px',
         created: p.created, status: st, statusColor: colorFor(st), isApproved: ok, notApproved: !ok,
         rollDis: !ok || p.deliv > CUR || k.available <= 0 || s.afterCutoff || rollOpts.length === 0,
         preDis: !ok || p.deliv <= CUR || k.available <= 0 || s.afterCutoff,
@@ -1574,7 +1574,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             <div class="ln">Parent PO ID: <span style="color:#0B5CAD">${it.po}</span></div>
             ${it.hasFrom ? html`<div class="ln">Source Entry: ${it.from}</div>` : null}
             <div class="ln">Price Type: ${it.priceType}</div>
-            <div class="ln">Origin delivery: ${it.origin} · Price-by: ${it.priceBy}</div>
+            <div class="ln">Origin delivery: ${it.origin} · Rollover allowed till: ${it.priceBy}</div>
             ${it.hasFile ? html`<div class="ln">Attachment: <span style="color:#0B5CAD">${it.file}</span></div>` : null}
             ${it.hasSc ? html`<div class="ln">${it.scLine}</div>` : null}
             ${it.hasBw ? html`<div class="ln">${it.bwLine}</div>` : null}
@@ -1640,7 +1640,7 @@ ${v.mReq ? overlay('mreqt', 540, html`<div>
   ${mHead('mreqt', v.mr.title)}
   <div style="background:#F5F7FA;border-radius:6px;padding:12px 14px;margin:16px 0;font-size:13px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px 16px">
     <div>PO ID: <b>${v.mr.po}</b></div><div>Customer: ${v.mr.cust}</div>
-    <div>Origin delivery: ${v.mr.origin}</div><div>Price-by: ${v.mr.priceBy}</div>
+    <div>Origin delivery: ${v.mr.origin}</div><div>Rollover allowed till: ${v.mr.priceBy}</div>
     <div>Non-priced qty: ${v.mr.unpriced} MT</div><div>Available now: <b>${v.mr.available} MT</b></div>
   </div>
   <label class="lbl" for="mrqty">Quantity (MT)</label>
