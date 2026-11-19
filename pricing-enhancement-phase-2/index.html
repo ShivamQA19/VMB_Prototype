@@ -477,7 +477,8 @@ class App extends React.Component {
     if (!f.month) return this.setForm({ err: 'Select the pricing month.' });
     if (md.exception && !f.file) return this.setForm({ err: 'Attach the approval document (Mail or PDF, up to 10 MB).' });
     var seq = s.seq + 1; var stage = md.exception ? 1 : 0;
-    var r = { id: 'RR-' + (1900 + seq), type: md.type, po: md.po, qty: q, priceType: f.priceType, month: Number(f.month), stage: stage, sc: '', bw: '', created: nowStr(), exception: md.exception, file: f.file || '', rejectedBy: '', reason: '', seq: seq };
+    var rn = 1900 + seq; while (s.reqs.some(function (x) { return x.id === 'RR-' + rn; })) rn++;
+    var r = { id: 'RR-' + rn, type: md.type, po: md.po, qty: q, priceType: f.priceType, month: Number(f.month), stage: stage, sc: '', bw: '', created: nowStr(), exception: md.exception, file: f.file || '', rejectedBy: '', reason: '', seq: seq };
     this.setState({ reqs: s.reqs.concat([r]), seq: seq, modal: null, form: {} });
     this.flash(md.type + ' request ' + r.id + ' submitted · ' + CHAIN[stage] + ' Approval Pending · email sent to ' + CHAIN[stage]);
   }
@@ -840,6 +841,7 @@ class App extends React.Component {
       };
     });
 
+    var lnOf = {}; this.pricingLines('777').forEach(function (l) { lnOf[l.key] = l; });
     var custReqRows = s.reqs.filter(function (r) { var rp = self.poById(r.po); return rp && rp.cust === '777'; }).map(function (r) {
       var rp = self.poById(r.po); var st = self.reqStatus(r);
       return {
@@ -847,7 +849,12 @@ class App extends React.Component {
         priceIn: ml(r.month), product: rp.product, qtyLabel: r.type + ' Qty : ' + fmt(r.qty),
         hasSc: !!r.sc, scLine: 'Service charge: ' + r.sc + ' USD/MT', hasBw: !!r.bw, bwLine: (r.type === 'Rollover' ? 'Backwardation: ' : 'Contango: ') + r.bw + ' USD/MT',
         hasReason: !!r.reason, reason: r.reason, exception: !!r.exception,
-        created: r.created, status: st, statusColor: colorFor(st)
+        created: r.created, status: st, statusColor: colorFor(st),
+        isApproved: st === 'Approved', notApproved: st !== 'Approved',
+        canBook: st === 'Approved' && !!lnOf[r.id] && lnOf[r.id].month <= CUR && lnOf[r.id].qty - lnOf[r.id].booked > 0,
+        bookNote: st !== 'Approved' || !lnOf[r.id] ? '' : (lnOf[r.id].qty - lnOf[r.id].booked <= 0 ? 'Fully booked' : (lnOf[r.id].month > CUR ? 'Price booking opens in ' + mlD(r.month) : '')),
+        book: function () { self.openBook(r.id); },
+        view: function () { self.setState({ tab: 'pb', pbMonth: r.month, pbF: {}, pbOpen: {} }); try { window.scrollTo(0, 0); } catch (e) {} }
       };
     });
     custPOs = custPOs.concat(custReqRows).sort(function (a, b) { return b.seq - a.seq; });
@@ -1477,7 +1484,12 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         <div><div class="ln">${p.qtyLabel}</div></div>
         <div>${p.created}</div>
         <div style=${'color:' + p.statusColor}>● ${p.status}</div>
-        <div><span>–</span></div>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+          ${p.isApproved ? html`<button type="button" class="lnk" onClick=${p.book} disabled=${!p.canBook}>Book Price</button>` : null}
+          ${p.isApproved ? html`<button type="button" class="lnk" onClick=${p.view}>View Bookings</button>` : null}
+          ${p.bookNote ? html`<div class="muted" style="font-size:12px;margin-top:4px">${p.bookNote}</div>` : null}
+          ${p.notApproved ? html`<span>–</span>` : null}
+        </div>
       </div>`; return html`<div key=${p.id} class="trow g-po">
         <div><div style="color:#0B5CAD;font-weight:500">${p.id}</div></div>
         <div>
