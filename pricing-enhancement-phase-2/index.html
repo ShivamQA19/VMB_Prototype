@@ -1327,7 +1327,7 @@ App.prototype.render = function () {
       <button type="submit" class="bigbtn" style="background:#0B5CAD;height:50px">Sign in</button>
       <div class="or">or sign in as a demo user</div>
       <div class="roles">${L.quick.map(function (q) { return html`<button key=${q.role} type="button" class="role" onClick=${q.pick} aria-label=${'Sign in as ' + q.label + ', ' + q.email}><span class="rav">${q.initials}</span><b>${q.label}</b><small>${q.desc}</small></button>`; })}</div>
-      <p class="muted" style="text-align:center;font-size:13px;margin:0">Demo accounts: customer@mahaveermetal.com, asm@, rm@, rfm@, csa@, treasury@vedanta.com · password <b>${L.password}</b></p>
+      <p class="muted" style="text-align:center;font-size:13px;margin:0">Demo accounts: customer@mahaveermetal.com, asm@, rm@, rfm@, csa@, treasury@, mfc@vedanta.com · password <b>${L.password}</b></p>
     </form>
   </div>
   <div class="wm" aria-hidden="true"></div>
