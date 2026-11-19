@@ -439,10 +439,10 @@ class App extends React.Component {
     var onLine = s.bookings.filter(function (b) { return lineOf(b) === p.id; });
     var priced = onLine.filter(function (b) { return b.status === 'Approved'; }).reduce(function (a, b) { return a + b.qty; }, 0);
     var pendingB = onLine.filter(isPendingB).reduce(function (a, b) { return a + b.qty; }, 0);
-    var appr = s.reqs.filter(function (r) { return r.po === p.id && r.stage >= 5 && !r.rejectedBy; });
+    var appr = s.reqs.filter(function (r) { return r.po === p.id && !r.from && r.stage >= 5 && !r.rejectedBy; });
     var rolled = appr.filter(function (r) { return r.type === 'Rollover'; }).reduce(function (a, r) { return a + r.qty; }, 0);
     var preponed = appr.filter(function (r) { return r.type === 'Preponement'; }).reduce(function (a, r) { return a + r.qty; }, 0);
-    var blocked = s.reqs.filter(function (r) { return r.po === p.id && r.stage < 5 && !r.rejectedBy; }).reduce(function (a, r) { return a + r.qty; }, 0) + pendingB;
+    var blocked = s.reqs.filter(function (r) { return r.po === p.id && !r.from && r.stage < 5 && !r.rejectedBy; }).reduce(function (a, r) { return a + r.qty; }, 0) + pendingB;
     var pricing = Math.max(0, p.planned - rolled - preponed);
     var unpriced = Math.max(0, pricing - priced);
     return { priced: priced, rolled: rolled, preponed: preponed, pricing: pricing, pendingB: pendingB, blocked: blocked, unpriced: unpriced, available: Math.max(0, unpriced - blocked), priceBy: Math.min(p.deliv + 2, p.mouExp) };
@@ -450,35 +450,40 @@ class App extends React.Component {
   poStatus(p) { if (p.rejectedBy) return 'Cancelled by ' + p.rejectedBy; if (p.stage >= 2) return 'Approved'; return p.stage === 0 ? 'Created' : 'RM Approval Pending'; }
   reqStatus(r) { if (r.rejectedBy) return 'Rejected by ' + r.rejectedBy; if (r.stage >= 5) return 'Approved'; return CHAIN[r.stage] + ' Approval Pending'; }
 
-  reqMonthOpts(type, p, k, exception) {
+  lineAvail(key) {
+    var ln = this.pricingLines(null).find(function (l) { return l.key === key; });
+    return ln ? { line: ln, avail: Math.max(0, ln.qty - ln.booked - ln.held) } : { line: null, avail: 0 };
+  }
+  reqMonthOpts(type, p, k, exception, fromMonth) {
     var out = []; var m;
     if (type === 'Rollover') {
       var end = exception ? p.deliv + 12 : CUR + 2;
-      for (m = CUR + 1; m <= end; m++) {
+      for (m = (fromMonth != null ? Math.max(CUR + 1, fromMonth + 1) : CUR + 1); m <= end; m++) {
         var beyond = m > k.priceBy; var tag = '';
         var extra = '';
         out.push({ v: String(m), l: ml(m) + tag + extra, dis: beyond && !exception });
       }
     } else {
-      for (m = CUR; m < p.deliv; m++) out.push({ v: String(m), l: ml(m), dis: false });
+      for (m = CUR; m < (fromMonth != null ? fromMonth : p.deliv); m++) out.push({ v: String(m), l: ml(m), dis: false });
     }
     return out;
   }
-  openReq(type, poId, exception) {
-    var p = this.poById(poId); var k = this.calc(p);
-    var opts = this.reqMonthOpts(type, p, k, exception).filter(function (o) { return !o.dis; });
-    this.setState({ modal: { kind: 'req', type: type, po: poId, exception: exception }, form: { qty: '', priceType: 'Day CSP', month: opts.length ? opts[0].v : '', file: '', err: '' } });
+  openReq(type, poId, exception, from) {
+    var p = this.poById(poId); var k = this.calc(p); var fm = from ? this.lineAvail(from).line.month : null;
+    var opts = this.reqMonthOpts(type, p, k, exception, fm).filter(function (o) { return !o.dis; });
+    this.setState({ modal: { kind: 'req', type: type, po: poId, exception: exception, from: from || '' }, form: { qty: '', priceType: 'Day CSP', month: opts.length ? opts[0].v : '', file: '', err: '' } });
   }
   submitReq() {
     var s = this.state; var md = s.modal; var f = s.form; var p = this.poById(md.po); var k = this.calc(p);
     var q = parseFloat(f.qty);
     if (!(q > 0)) return this.setForm({ err: 'Enter a quantity greater than 0.' });
-    if (q > k.available) return this.setForm({ err: 'Quantity cannot exceed the available non-priced quantity of ' + fmt(k.available) + ' MT.' });
+    var availQ = md.from ? this.lineAvail(md.from).avail : k.available;
+    if (q > availQ) return this.setForm({ err: 'Quantity cannot exceed the available non-priced quantity of ' + fmt(availQ) + ' MT.' });
     if (!f.month) return this.setForm({ err: 'Select the pricing month.' });
     if (md.exception && !f.file) return this.setForm({ err: 'Attach the approval document (Mail or PDF, up to 10 MB).' });
     var seq = s.seq + 1; var stage = md.exception ? 1 : 0;
     var rn = 1900 + seq; while (s.reqs.some(function (x) { return x.id === 'RR-' + rn; })) rn++;
-    var r = { id: 'RR-' + rn, type: md.type, po: md.po, qty: q, priceType: f.priceType, month: Number(f.month), stage: stage, sc: '', bw: '', created: nowStr(), exception: md.exception, file: f.file || '', rejectedBy: '', reason: '', seq: seq };
+    var r = { id: 'RR-' + rn, type: md.type, po: md.po, qty: q, priceType: f.priceType, month: Number(f.month), stage: stage, sc: '', bw: '', created: nowStr(), exception: md.exception, file: f.file || '', rejectedBy: '', reason: '', seq: seq, from: md.from || '' };
     this.setState({ reqs: s.reqs.concat([r]), seq: seq, modal: null, form: {} });
     this.flash(md.type + ' request ' + r.id + ' submitted · ' + CHAIN[stage] + ' Approval Pending · email sent to ' + CHAIN[stage]);
   }
@@ -562,7 +567,10 @@ class App extends React.Component {
       var onL = s.bookings.filter(function (b) { return lineOf(b) === r.id; });
       var priced = onL.filter(function (b) { return b.status === 'Approved'; }).reduce(function (a, b) { return a + b.qty; }, 0);
       var pend = onL.filter(isPendingB).reduce(function (a, b) { return a + b.qty; }, 0);
-      out.push({ key: r.id, kind: r.type, parent: r.po, p: p, month: r.month, qty: r.qty, booked: priced + pend, priced: priced, sc: r.sc, cb: r.bw, priceType: r.priceType, seq: r.seq, moved: 0, held: 0 });
+      var kidsR = s.reqs.filter(function (x) { return x.from === r.id && !x.rejectedBy; });
+      var movedOut = kidsR.filter(function (x) { return x.stage >= 5; }).reduce(function (a, x) { return a + x.qty; }, 0);
+      var heldR = kidsR.filter(function (x) { return x.stage < 5; }).reduce(function (a, x) { return a + x.qty; }, 0);
+      out.push({ key: r.id, kind: r.type, parent: r.po, p: p, month: r.month, qty: Math.max(0, r.qty - movedOut), origQty: r.qty, booked: priced + pend, priced: priced, sc: r.sc, cb: r.bw, priceType: r.priceType, seq: r.seq, moved: movedOut, held: heldR, from: r.from || '' });
     });
     return out.sort(function (a, b) { return b.seq - a.seq; });
   }
@@ -850,7 +858,13 @@ class App extends React.Component {
         hasSc: !!r.sc, scLine: 'Service charge: ' + r.sc + ' USD/MT', hasBw: !!r.bw, bwLine: (r.type === 'Rollover' ? 'Backwardation: ' : 'Contango: ') + r.bw + ' USD/MT',
         hasReason: !!r.reason, reason: r.reason, exception: !!r.exception,
         created: r.created, status: st, statusColor: colorFor(st),
-        isApproved: st === 'Approved', notApproved: st !== 'Approved',
+        isApproved: st === 'Approved', notApproved: st !== 'Approved', hasFrom: !!r.from, fromLine: 'Source Entry: ' + r.from,
+        rollDis: st !== 'Approved' || !lnOf[r.id] || (lnOf[r.id].qty - lnOf[r.id].booked - lnOf[r.id].held) <= 0 || self.reqMonthOpts('Rollover', rp, self.calc(rp), false, lnOf[r.id].month).filter(function (o) { return !o.dis; }).length === 0,
+        preDis: st !== 'Approved' || !lnOf[r.id] || (lnOf[r.id].qty - lnOf[r.id].booked - lnOf[r.id].held) <= 0 || lnOf[r.id].month <= CUR,
+        openRoll: function () { self.openReq('Rollover', r.po, false, r.id); },
+        openPre: function () { self.openReq('Preponement', r.po, false, r.id); },
+        nyi: function () { self.flash('Existing flow – not changed in Phase 2'); },
+        hasMovedOn: !!lnOf[r.id] && lnOf[r.id].moved > 0, movedOnLine: lnOf[r.id] ? 'Moved on: ' + fmt(lnOf[r.id].moved) + ' · Remaining: ' + fmt(lnOf[r.id].qty) : '',
         canBook: st === 'Approved' && !!lnOf[r.id] && lnOf[r.id].month <= CUR && lnOf[r.id].qty - lnOf[r.id].booked > 0,
         bookNote: st !== 'Approved' || !lnOf[r.id] ? '' : (lnOf[r.id].qty - lnOf[r.id].booked <= 0 ? 'Fully booked' : (lnOf[r.id].month > CUR ? 'Price booking opens in ' + mlD(r.month) : '')),
         book: function () { self.openBook(r.id); },
@@ -894,7 +908,7 @@ class App extends React.Component {
       var trail = CHAIN.map(function (cName, i) { return i < r.stage ? cName + ' ✓' : (i === r.stage && !r.rejectedBy ? cName + ' (pending)' : cName); }).join(' → ');
       return {
         canSelect: false, sel: false, selLabel: '', toggle: null, hasEff: false, effLine: '',
-        isReq: true, isPo: false, custId: p.cust, custName: p.custName, typeLabel: r.type + ' Request', exception: r.exception, id: r.id, po: r.po,
+        isReq: true, isPo: false, hasFrom: !!r.from, from: r.from || '', custId: p.cust, custName: p.custName, typeLabel: r.type + ' Request', exception: r.exception, id: r.id, po: r.po,
         priceType: r.priceType, origin: ml(p.deliv), priceBy: ml(k.priceBy), hasFile: !!r.file, file: r.file,
         hasSc: !!r.sc, scLine: 'Service charge: ' + r.sc + ' USD/MT', hasBw: !!r.bw, bwLine: (r.type === 'Rollover' ? 'Backwardation: ' : 'Contango: ') + r.bw + ' USD/MT',
         hasReason: !!r.reason, reason: r.reason, priceIn: ml(r.month), product: p.product,
@@ -969,12 +983,13 @@ class App extends React.Component {
     var md = s.modal; var f = s.form || {};
     var mr = {};
     if (md && md.kind === 'req') {
-      var rp = this.poById(md.po); var rk = this.calc(rp);
+      var rp = this.poById(md.po); var rk = this.calc(rp); var la = md.from ? this.lineAvail(md.from) : null;
+      if (la) { rk = Object.assign({}, rk, { unpriced: la.line.qty - la.line.priced, available: la.avail }); }
       mr = {
-        title: md.exception ? 'Raise Rollover – ASM exception' : md.type, po: rp.id, cust: rp.cust + ' · ' + rp.custName, origin: ml(rp.deliv), priceBy: ml(rk.priceBy),
+        title: (md.exception ? 'Raise Rollover – ASM exception' : md.type) + (md.from ? ' – from ' + md.from : ''), po: rp.id, cust: rp.cust + ' · ' + rp.custName, origin: ml(rp.deliv), priceBy: ml(rk.priceBy),
         unpriced: fmt(rk.unpriced), available: fmt(rk.available), exception: md.exception, hasFile: !!f.file,
         monthLabel: md.type === 'Rollover' ? 'Pricing In Month' : 'Pricing In Month (before delivery)',
-        opts: this.reqMonthOpts(md.type, rp, rk, md.exception),
+        opts: this.reqMonthOpts(md.type, rp, rk, md.exception, la ? la.line.month : null),
         ptOpts: [{ v: 'Day CSP', l: 'Day CSP' }, { v: 'MOSS', l: 'MOSS' }],
         flowNote: md.exception ? 'Raised by ASM on behalf of the customer. Approval flow: RM → RFM → CSA → Treasury.' : 'Approval flow: ASM → RM → RFM → CSA → Treasury. The quantity stays blocked for pricing until final approval.',
         hasErr: !!f.err,
@@ -1472,6 +1487,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         <div><div style="color:#0B5CAD;font-weight:500">${p.id}</div><span class="badge" style="background:#EDE7F6;color:#4527A0;margin-top:6px">${p.typeLabel}</span></div>
         <div>
           <div class="ln">Parent PO ID: <span style="color:#0B5CAD;font-weight:500">${p.parentPo}</span></div>
+          ${p.hasFrom ? html`<div class="ln">${p.fromLine}</div>` : null}
           <div class="ln">Price Type: ${p.priceType}</div>
           <div class="ln">Origin Delivery: ${p.origin}</div>
           <div class="ln">MoU No: ${p.mou}</div>
@@ -1481,12 +1497,17 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
         </div>
         <div>${p.priceIn}</div>
         <div>${p.product}</div>
-        <div><div class="ln">${p.qtyLabel}</div></div>
+        <div><div class="ln">${p.qtyLabel}</div>${p.hasMovedOn ? html`<div class="muted" style="font-size:12px">${p.movedOnLine}</div>` : null}</div>
         <div>${p.created}</div>
         <div style=${'color:' + p.statusColor}>● ${p.status}</div>
         <div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
-          ${p.isApproved ? html`<button type="button" class="lnk" onClick=${p.book} disabled=${!p.canBook}>Book Price</button>` : null}
-          ${p.isApproved ? html`<button type="button" class="lnk" onClick=${p.view}>View Bookings</button>` : null}
+          ${p.isApproved ? html`<div style="display:flex;flex-direction:column;align-items:flex-start;gap:2px">
+            <button type="button" class="lnk" onClick=${p.nyi}>Create Delivery</button>
+            <button type="button" class="lnk" onClick=${p.nyi}>Proforma Invoice</button>
+            <button type="button" class="lnk" onClick=${p.openPre} disabled=${p.preDis}>Preponement</button>
+            <button type="button" class="lnk" onClick=${p.openRoll} disabled=${p.rollDis}>Rollover</button>
+            <button type="button" class="lnk" onClick=${p.book} disabled=${!p.canBook}>Book Price</button>
+          </div>` : null}
           ${p.bookNote ? html`<div class="muted" style="font-size:12px;margin-top:4px">${p.bookNote}</div>` : null}
           ${p.notApproved ? html`<span>–</span>` : null}
         </div>
@@ -1551,6 +1572,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="badge" style="background:#EDE7F6;color:#4527A0">${it.typeLabel}</span>${it.exception ? html`<span class="badge" style="background:#FFF4E5;color:#7A4A00">Beyond M+2 · ASM exception</span>` : null}</div>
             <div class="ln">Request ID: ${it.id}</div>
             <div class="ln">Parent PO ID: <span style="color:#0B5CAD">${it.po}</span></div>
+            ${it.hasFrom ? html`<div class="ln">Source Entry: ${it.from}</div>` : null}
             <div class="ln">Price Type: ${it.priceType}</div>
             <div class="ln">Origin delivery: ${it.origin} · Price-by: ${it.priceBy}</div>
             ${it.hasFile ? html`<div class="ln">Attachment: <span style="color:#0B5CAD">${it.file}</span></div>` : null}
