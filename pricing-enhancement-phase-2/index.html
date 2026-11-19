@@ -147,6 +147,8 @@ a{color:#0B5CAD}a:hover{color:#08427D}
 .sw{width:44px;height:24px;border-radius:12px;border:0;background:#B0B7C3;position:relative;cursor:pointer;vertical-align:middle;padding:0}
 .sw span{position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
 .sw-on{background:#3E7C17}.sw-on span{left:23px}
+.mflag{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:4px;background:#FFF1E0;color:#8A4B00;border:1px solid #F5C58A;font-size:12px;font-weight:700;letter-spacing:.02em}
+.mflag:before{content:"";width:7px;height:7px;border-radius:50%;background:#E07B00}
 </style>
 <script>
 // Minimal built-in renderer (no external libraries): tagged-template parser + full re-render with focus restore.
@@ -680,13 +682,13 @@ class App extends React.Component {
         return { id: b.id, pbid: 'PB id: ' + b.id, cdt: 'CDT: 2026A' + ('00000' + digits(b.id)).slice(-5), spot: spot, booked: TYPE_LABEL[b.type] || b.type, type: b.type,
           lme: b.lme !== '—' ? 'LME Price: ' + b.lme : '', hasLme: b.lme !== '—', qty: 'Booked Qty: ' + fmt(b.qty), priceIn: priceIn, priceBooked: b.status === 'Approved' && b.lme !== '—' ? b.lme : '--',
           created: b.at, status: st, pill: 'background:' + tone[0] + ';color:' + tone[1], dot: 'background:' + tone[2], contango: b.cb || '--', hasSc: !!b.sc, scLine: 'Service charge: ' + b.sc,
-          note: b.source === 'Manual (HZL)' ? (b.by || 'Manual (HZL)') : (b.source !== 'VMB' ? b.source : ''), hasNote: b.source !== 'VMB',
+          note: b.source === 'Manual (HZL)' ? (b.by || 'Entered by ASM') : (b.source !== 'VMB' ? b.source : ''), hasNote: b.source !== 'VMB', isManual: b.source === 'Manual (HZL)',
           hasReason: !!b.reason, reason: b.reason,
           canAct: act, canConfirm: role === 'Customer' && b.status === 'Customer Confirmation Pending', none: !act && !(role === 'Customer' && b.status === 'Customer Confirmation Pending'),
           approve: function () { self.openBookApprove(b.id); }, confirm: function () { self.approveBooking(b.id); },
           reject: function () { self.setState({ modal: { kind: 'reject', target: 'booking', id: b.id }, form: { reason: '', err: '' } }); } };
       });
-      rows.push({ key: ln.key, custId: p.cust, custName: p.custName, dealId: ln.key, isReq: isReq, kindLabel: ln.kind, parent: ln.parent,
+      rows.push({ hasManual: kids.some(function (b) { return b.source === 'Manual (HZL)'; }), key: ln.key, custId: p.cust, custName: p.custName, dealId: ln.key, isReq: isReq, kindLabel: ln.kind, parent: ln.parent,
         productType: 'Product Type: ' + (zinc ? 'Zinc' : 'Lead'), pdt: 'PDT: 6111' + digits(ln.parent).slice(-5), priceType: isReq ? (req ? req.priceType : '') : ln.priceType,
         qtyLines: isReq ? [ln.kind + ' Qty: ' + fmt(ln.qty), 'Balance: ' + fmt(bal)] : ['Planned Qty: ' + fmt(p.planned), 'Net Pricing Qty: ' + fmt(ln.qty), 'Balance: ' + fmt(bal)],
         hasHeld: ln.held > 0, heldLine: fmt(ln.held) + ' MT blocked (request pending)',
@@ -895,7 +897,7 @@ class App extends React.Component {
       else if (ok && k.unpriced === 0) hint = 'Fully priced.';
       var reqLines = s.reqs.filter(function (r) { return r.po === p.id; }).map(function (r) { return r.type + ' ' + r.id + ': ' + fmt(r.qty) + ' MT → ' + ml(r.month) + ' · ' + self.reqStatus(r); });
       return {
-        isReq: false, seq: p.seq, id: p.id, kind: p.kind, priceType: p.priceType, delivLabel: ml(p.deliv), mou: p.mou, reqLines: reqLines,
+        hasManual: s.bookings.some(function (b) { return b.po === p.id && b.source === 'Manual (HZL)' && b.status === 'Approved'; }), isReq: false, seq: p.seq, id: p.id, kind: p.kind, priceType: p.priceType, delivLabel: ml(p.deliv), mou: p.mou, reqLines: reqLines,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         physical: fmt(p.planned), pricing: fmt(k.pricing), planned: fmt(p.planned), priced: fmt(k.priced), unpriced: fmt(k.unpriced),
         hasBlocked: k.blocked > 0, blocked: fmt(k.blocked), delivered: fmt(p.delivered),
@@ -990,7 +992,7 @@ class App extends React.Component {
         canSelect: canSel, sel: !!s.selected[p.id], selLabel: 'Select plan ' + p.id,
         toggle: function () { var n = Object.assign({}, self.state.selected); if (n[p.id]) delete n[p.id]; else n[p.id] = true; self.setState({ selected: n }); },
         hasEff: !!p.rmDone, effLine: (p.eff ? 'Effective Date: ' + p.eff + ' · ' : '') + 'Additional Premium: ' + (p.prem || '0.00'),
-        isReq: false, isPo: true, isM1: !!p.m1, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
+        hasManual: s.bookings.some(function (b) { return b.po === p.id && b.source === 'Manual (HZL)' && b.status.indexOf('Rejected') !== 0; }), isReq: false, isPo: true, isM1: !!p.m1, custId: p.cust, custName: p.custName, priceType: p.priceType, id: p.id, origin: ml(p.deliv), mou: p.mou, kind: p.kind,
         priceIn: p.priceInLbl || ml(p.deliv), product: p.product,
         qtyLines: ['Net Physical Qty : ' + fmt(p.planned), 'Net Pricing Qty : ' + fmt(k.pricing), 'Planned : ' + fmt(p.planned), 'Delivered : ' + fmt(p.delivered)],
         created: p.created, status: st, statusColor: colorFor(st), hasTrail: false, trail: '',
@@ -1295,7 +1297,7 @@ var pbPage = function (P) {
       <div class="trow g-pbk">
         <div>${r.hasKids ? html`<button type="button" class="pbtog" aria-label=${r.toggleLabel} aria-expanded=${r.open ? 'true' : 'false'} onClick=${r.toggle}>${r.open ? '−' : '+'}</button>` : null}</div>
         <div><div style="color:#0B5CAD;font-weight:600;font-size:15px">${r.custId}</div><div>${r.custName}</div></div>
-        <div><div style="font-weight:500">${r.dealId}</div>${r.isReq ? html`<div><span class="badge" style="background:#EDE7F6;color:#4527A0;margin:4px 0">${r.kindLabel}</span><div style="font-size:13px">Parent PO: <span style="color:#0B5CAD">${r.parent}</span></div></div>` : null}<div style="font-weight:500">${r.productType}</div></div>
+        <div><div style="font-weight:500">${r.dealId}</div>${r.hasManual ? html`<div style="margin:4px 0"><span class="mflag" title="Pricing done directly with HZL, entered by ASM">Manual Entry</span></div>` : null}${r.isReq ? html`<div><span class="badge" style="background:#EDE7F6;color:#4527A0;margin:4px 0">${r.kindLabel}</span><div style="font-size:13px">Parent PO: <span style="color:#0B5CAD">${r.parent}</span></div></div>` : null}<div style="font-weight:500">${r.productType}</div></div>
         <div>${r.pdt}</div>
         <div>${r.priceType}</div>
         <div>${r.qtyLines.map(function (q) { return html`<div key=${q} class="ln">${q}</div>`; })}${r.hasHeld ? html`<div style="font-size:12px;color:#7A4A00">${r.heldLine}</div>` : null}</div>
@@ -1309,7 +1311,7 @@ var pbPage = function (P) {
       ${r.children.map(function (c) { return html`<div key=${c.id} class="trow g-pbk pbchild">
         <div><span class="pbconn" aria-hidden="true"></span></div>
         <div></div>
-        <div>${c.pbid}${c.hasNote ? html`<div class="muted" style="font-size:12px;margin-top:4px">${c.note}</div>` : null}</div>
+        <div>${c.pbid}${c.isManual ? html`<div style="margin-top:4px"><span class="mflag" title="Pricing done directly with HZL, entered by ASM">Manual Entry</span></div>` : null}${c.hasNote ? html`<div class="muted" style="font-size:12px;margin-top:4px">${c.note}</div>` : null}</div>
         <div>${c.cdt}</div>
         <div>${c.spot ? html`<div><b>SPOT Price</b><div>Booked Type: <b>${c.booked}</b></div></div>` : html`<b>${c.booked}</b>`}${c.hasLme ? html`<div>${c.lme}</div>` : null}</div>
         <div><b>${c.qty}</b></div>
@@ -1612,6 +1614,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           <div class="ln">Price Type: ${p.priceType}</div>
           <div class="ln">Delivery In: ${p.delivLabel}</div>
           <div class="ln">MoU No: ${p.mou}</div>
+          ${p.hasManual ? html`<div class="ln"><span class="mflag" title="Pricing done directly with HZL, entered by ASM">Manual Entry</span></div>` : null}
           ${p.isM1 ? html`<div class="ln"><span class="badge" style="background:#E0F2F1;color:#00574B">M-1 Plan</span> <span class="muted" style="font-size:12px">${p.m1Sap}</span></div>` : null}
         </div>
         <div>${p.priceIn}</div>
@@ -1679,6 +1682,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             <div class="ln">Delivery In: ${it.origin}</div>
             <div class="ln">MoU No: ${it.mou}</div>
             ${it.isM1 ? html`<div class="ln"><span class="badge" style="background:#E0F2F1;color:#00574B">M-1 Plan</span></div>` : null}
+            ${it.hasManual ? html`<div class="ln"><span class="mflag" title="Pricing done directly with HZL, entered by ASM">Manual Entry</span></div>` : null}
             ${it.hasEff ? html`<div class="ln">${it.effLine}</div>` : null}
           </div>`}
         </div>
