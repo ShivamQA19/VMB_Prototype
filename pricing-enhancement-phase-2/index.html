@@ -1023,10 +1023,6 @@ App.prototype.render = function () {
     <span style="font-weight:600">${v.role} · ${v.acct.email}</span>
     <button type="button" onClick=${v.logout} style="height:30px;padding:0 12px;border-radius:15px;border:1px solid #93C5FD;background:#2563EB;color:#fff;font:500 13px Roboto,Arial,sans-serif;cursor:pointer">Log out / switch user</button>
   </div>
-  <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-    <span style="color:#D1D5DB">Demo clock</span>
-    ${v.clockBtns.map(function (r) { return html`<button key=${r.label} type="button" onClick=${r.pick} style=${r.style}>${r.label}</button>`; })}
-  </div>
   <button type="button" onClick=${v.reset} style="height:30px;padding:0 12px;border-radius:15px;border:1px solid #4B5563;background:transparent;color:#fff;font:500 13px Roboto,Arial,sans-serif;cursor:pointer">Reset data</button>
 </div>
 
