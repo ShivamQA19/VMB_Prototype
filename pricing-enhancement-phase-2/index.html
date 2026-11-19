@@ -1588,8 +1588,6 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           <div class="ln">Price Type: ${p.priceType}</div>
           <div class="ln">Origin Delivery: ${p.origin}</div>
           <div class="ln">MoU No: ${p.mou}</div>
-          ${p.hasSc ? html`<div class="ln">${p.scLine}</div>` : null}
-          ${p.hasBw ? html`<div class="ln">${p.bwLine}</div>` : null}
           ${p.hasReason ? html`<div class="ln" style="color:#B3261E">Reason: ${p.reason}</div>` : null}
         </div>
         <div>${p.priceIn}</div>
@@ -1674,8 +1672,6 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
             <div class="ln">Price Type: ${it.priceType}</div>
             <div class="ln">Origin delivery: ${it.origin} · Rollover allowed till: ${it.priceBy}</div>
             ${it.hasFile ? html`<div class="ln">Attachment: <span style="color:#0B5CAD">${it.file}</span></div>` : null}
-            ${it.hasSc ? html`<div class="ln">${it.scLine}</div>` : null}
-            ${it.hasBw ? html`<div class="ln">${it.bwLine}</div>` : null}
             ${it.hasReason ? html`<div class="ln" style="color:#B3261E">Reason: ${it.reason}</div>` : null}
           </div>` : html`<div>
             <div class="ln">Price Type: ${it.priceType}</div>
