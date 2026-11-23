@@ -565,7 +565,7 @@ class App extends React.Component {
     this.setState({ reqs: s.reqs.map(function (r) { return r.id === md.id ? Object.assign({}, r, { rejectedBy: s.role, reason: reason }) : r; }), modal: null, form: {} });
     this.flash('Request rejected · blocked quantity released to the customer for pricing');
   }
-  openManual() { this.setState({ modal: { kind: 'manual' }, form: { cust: '', po: '', qty: '', type: 'Day CSP', lme: '', date: isoToday(), time: '16:30', err: '' } }); }
+  openManual() { this.setState({ modal: { kind: 'manual' }, form: { cust: '', po: '', qty: '', type: 'Day CSP', lme: '', date: isoToday(), err: '' } }); }
   manualPo(f) { var self = this; var id = String(f.po || '').trim().toUpperCase(); var p = this.poById(id); if (!p || p.cust !== f.cust || self.poStatus(p) !== 'Approved' || p.m1) return null; return p; }
   submitManual() {
     var s = this.state; var f = s.form;
@@ -580,7 +580,7 @@ class App extends React.Component {
     if (spotM && !(parseFloat(String(f.lme).replace(/,/g, '')) > 0)) return this.setForm({ err: 'Enter the LME price for the Spot price type.' });
     if (!f.date || f.date < '2026-11-01' || f.date > isoToday()) return this.setForm({ err: 'Booking date must be within the current month (up to today).' });
     var parts = f.date.split('-'); var seq = s.seq + 1;
-    var b = { id: 'PB-' + (400 + seq), po: p.id, qty: q, type: f.type, priceMonth: CUR, lme: spotM ? fmt(parseFloat(String(f.lme).replace(/,/g, ''))) : sysLme(p), at: parts[2] + '/' + parts[1] + '/' + parts[0] + ' ' + (f.time || ''), status: 'CSA Approval Pending', chain: ['CSA'], stage: 0, source: 'Manual (HZL)', sc: '', cb: '', by: 'Entered by ASM', seq: seq };
+    var b = { id: 'PB-' + (400 + seq), po: p.id, qty: q, type: f.type, priceMonth: CUR, lme: spotM ? fmt(parseFloat(String(f.lme).replace(/,/g, ''))) : sysLme(p), at: parts[2] + '/' + parts[1] + '/' + parts[0], status: 'CSA Approval Pending', chain: ['CSA'], stage: 0, source: 'Manual (HZL)', sc: '', cb: '', by: 'Entered by ASM', seq: seq };
     this.setState({ bookings: s.bookings.concat([b]), seq: seq, modal: null, form: {} });
     this.flash('Manual entry ' + b.id + ' sent to CSA for approval');
   }
@@ -1817,7 +1817,6 @@ ${v.mManual ? overlay('mmt', 560, html`<div>
     <div><label class="lbl" for="mmq">Quantity (MT)</label><input id="mmq" class="inp" inputMode="decimal" value=${f.qty || ''} onChange=${v.mm.setQty} /></div>
     <div>${v.mm.spot ? html`<div><label class="lbl" for="mml">LME Price (USD/MT)</label><input id="mml" class="inp" inputMode="decimal" value=${f.lme || ''} onChange=${v.mm.setLme} /></div>` : html`<div><label class="lbl" for="mml">LME Price (USD/MT) – from system</label><input id="mml" class="inp" readOnly value=${v.mm.sysLme} /></div>`}</div>
     <div><label class="lbl" for="mmd">Booking date</label><input id="mmd" type="date" class="inp" min="2026-11-01" max=${v.mm.maxDate} value=${f.date || ''} onChange=${v.mm.setDate} /></div>
-    <div><label class="lbl" for="mmtm">Booking time</label><input id="mmtm" type="time" class="inp" value=${f.time || ''} onChange=${v.mm.setTime} /></div>
   </div>
   <div class="muted" style="font-size:12px;margin-top:8px">Quantity cannot exceed the plan order's balance unpriced quantity. Backdating is allowed within the current month only.</div>
   ${v.mm.hasErr ? html`<div class="err" role="alert">${f.err}</div>` : null}
