@@ -316,7 +316,7 @@ var MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','De
 var CUR = 10;
 var CHAIN = ['ASM','RM','RFM','CSA','Treasury'];
 var PO_CHAIN = ['ASM','RM'];
-var ROLES = ['Customer','ASM','RM','RFM','CSA','Treasury','MFC'];
+var ROLES = ['Customer','ASM','RM','RFM','CSA','Treasury'];
 var M1_CUSTOMERS = [
   { code: '777', name: 'MAHAVEER METAL CO.', region: 'North', products: 'Lead, Zinc' },
   { code: '8741', name: 'DIGIMRO DISTRIBUTION (INDIA) PRIVATE LIMITED', region: 'West', products: 'Zinc' },
@@ -347,13 +347,12 @@ var ACCOUNTS = {
   RM: { email: 'rm@vedanta.com', name: 'Regional Manager', initials: 'RM', desc: 'Final plan approval' },
   RFM: { email: 'rfm@vedanta.com', name: 'Regional Finance Manager', initials: 'RF', desc: 'Adds service charge' },
   CSA: { email: 'csa@vedanta.com', name: 'Customer Service Agent', initials: 'CS', desc: 'Checks manual pricing' },
-  Treasury: { email: 'treasury@vedanta.com', name: 'Treasury', initials: 'TR', desc: 'Adds backwardation' },
-  MFC: { email: 'mfc@vedanta.com', name: 'MFC', initials: 'MF', desc: 'Enables M-1 customers' }
+  Treasury: { email: 'treasury@vedanta.com', name: 'Treasury', initials: 'TR', desc: 'Adds backwardation' }
 };
 var SESSION_KEY = 'vmb-pricing-p2-user';
 function loadUser() { try { var u = window.localStorage.getItem(SESSION_KEY); return ACCOUNTS[u] ? u : null; } catch (e) { return null; } }
 function saveUser(u) { try { if (u) window.localStorage.setItem(SESSION_KEY, u); else window.localStorage.removeItem(SESSION_KEY); } catch (e) {} }
-function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : (r === 'MFC' ? 'm1' : 'po'), supStatus: 'all' }; }
+function roleHome(r) { return { role: r, tab: r === 'Customer' ? 'home' : 'po', supStatus: 'all' }; }
 var BOOK_TYPES = ['Day CSP', 'Period Average', 'Spot – Screen', 'Spot – Target', 'BDA', 'WEH'];
 var TYPE_LABEL = { 'Day CSP': 'Day CSP', 'Period Average': 'Period Average', 'Spot – Screen': 'Screen Price', 'Spot – Target': 'Target Price', 'BDA': 'Balance Day Avg', 'WEH': 'Which Ever Higher' };
 function mlD(i) { return MON[((i % 12) + 12) % 12] + '-' + (2026 + Math.floor(i / 12)); }
@@ -400,7 +399,7 @@ function seedState(){
   function po(o){ var r = {}; var k; for (k in M) r[k] = M[k]; for (k in o) r[k] = o[k]; if (!r.rejectedBy) r.rejectedBy = ''; return r; }
   return {
     role: 'Customer', tab: 'home', afterCutoff: false, toast: '', modal: null, form: {}, supStatus: 'all', supType: 'all', seq: 100, cartErr: '', selected: {},
-    cart: emptyCart(), pdp: newPdp('LEAD'), m1: { '777': true, '8741': false, '1150': true }, m1Log: { '777': 'Enabled by MFC on 03/11/2026', '1150': 'Enabled by MFC on 21/10/2026' },
+    cart: emptyCart(), pdp: newPdp('LEAD'), m1: { '777': true, '8741': false, '1150': true },
     pos: [
       po({ id: 'MOG100018150', priceType: 'Day CSP', deliv: 8, planned: 200, delivered: 200, stage: 2, created: '28/08/2026 10:15 AM', kind: 'Initial Plan', seq: 10 }),
       po({ id: 'MOG100018163', priceType: 'Day CSP', deliv: 9, planned: 100, delivered: 100, stage: 2, created: '29/09/2026 11:05 AM', kind: 'Initial Plan', seq: 20 }),
@@ -737,10 +736,7 @@ class App extends React.Component {
         { key: 'do', label: 'Delivery Orders', soon: 'Existing', onClick: soon('Delivery Orders use the existing flow') }
       ]));
     } else {
-      if (s.role === 'MFC') {
-        items.push({ key: 'home', icon: 'home', label: 'Home', cur: t === 'm1', onClick: go('m1') });
-        items.push({ key: 'm1', icon: 'manage', label: 'M-1 Enablement', cur: t === 'm1', onClick: go('m1') });
-      } else items.push({ key: 'home', icon: 'home', label: 'Home', cur: t === 'po', onClick: go('po') });
+      items.push({ key: 'home', icon: 'home', label: 'Home', cur: t === 'po', onClick: go('po') });
       items.push(group('proc', 'manage', 'Procurement', [
         { key: 'po', label: 'Planned Orders', cur: t === 'po', cnt: pending, onClick: go('po') },
         { key: 'pb', label: 'Price Bookings', cur: t === 'pb', onClick: go('pb') },
@@ -1154,7 +1150,7 @@ class App extends React.Component {
       yes: true, role: role, isCust: isCust, isSup: !isCust,
       roleBtns: roleBtns, clockBtns: clockBtns, tabs: tabs,
       nav: this.navModel(isCust, pendingCount), isPdpView: isCust && s.tab === 'pdp',
-      pageTitle: ({ m1: 'M-1 Enablement', home: 'All Products', cart: 'Cart', po: 'Planned Orders', pb: 'Price Bookings', dash: 'Dashboard', exc: 'Exception Report' })[s.tab] || '',
+      pageTitle: ({ home: 'All Products', cart: 'Cart', po: 'Planned Orders', pb: 'Price Bookings', dash: 'Dashboard', exc: 'Exception Report' })[s.tab] || '',
       reset: function () { clearTimeout(self._t); var st = seedState(); Object.assign(st, { user: s.user, loginEmail: '', loginPwd: '', loginErr: '' }, roleHome(s.user || 'Customer')); self.setState(st); self.flash('Sample data restored'); },
       loggedIn: !!s.user, acct: ACCOUNTS[role], logout: function () { self.logout(); },
       loginV: {
@@ -1173,12 +1169,7 @@ class App extends React.Component {
       crumbs: crumbs,
       showCutBanner: s.afterCutoff && isCust && s.tab === 'po',
       vCart: isCust && s.tab === 'cart' && !!c.product, vCartEmpty: isCust && s.tab === 'cart' && !c.product, vHome: isCust && s.tab === 'home', vPdp: isCust && s.tab === 'pdp', vCustPO: isCust && s.tab === 'po', vCustPB: isCust && s.tab === 'pb',
-      vSupPO: !isCust && s.tab === 'po', vSupPB: !isCust && s.tab === 'pb', vDash: !isCust && s.tab === 'dash', vExc: !isCust && s.tab === 'exc', vM1: role === 'MFC' && s.tab === 'm1',
-      m1Page: {
-        rows: M1_CUSTOMERS.map(function (c) { var on = !!s.m1[c.code]; return { code: c.code, name: c.name, region: c.region, products: c.products, on: on, label: on ? 'Enabled' : 'Not enabled', log: s.m1Log[c.code] || '—',
-          toggle: function () { var n = Object.assign({}, self.state.m1); n[c.code] = !on; var lg = Object.assign({}, self.state.m1Log); lg[c.code] = (on ? 'Disabled' : 'Enabled') + ' by MFC on ' + nowStr().split(' ')[0]; self.setState({ m1: n, m1Log: lg }); self.flash('M-1 ' + (on ? 'disabled' : 'enabled') + ' for ' + c.code + ' · ' + c.name); } }; }),
-        windows: [CUR + 1, CUR + 2].map(function (d) { var dl = firstLmeWd(d - 1); var open = d === m1Target(); return { d: ml(d), deadline: 'On or before ' + dmy(dl) + ' (1st LME working day of ' + ml(d - 1) + ')', status: open ? 'Open now' : 'Closed', style: open ? 'color:#1B5E20;font-weight:600' : 'color:#8C1D18;font-weight:600' }; })
-      },
+      vSupPO: !isCust && s.tab === 'po', vSupPB: !isCust && s.tab === 'pb', vDash: !isCust && s.tab === 'dash', vExc: !isCust && s.tab === 'exc',
       applied: applied, exported: exported,
       goHome: goHome, homeProducts: homeProducts, pdp: pdpV, cartCount: s.cart.product ? 1 : 0, openCart: function () { self.setState({ tab: 'cart' }); },
       cartName: c.product ? (prodOf(c.product).vlabel && prodOf(c.product).vlabel[c.variant]) || c.variant : '', cartImg: c.product ? imgOfP(c.product, c.variant) : '', cartMou: c.mou, clearCart: function () { self.setState({ cart: emptyCart(), cartErr: '' }); self.flash('Product removed from cart'); },
@@ -1374,7 +1365,7 @@ App.prototype.render = function () {
       <button type="submit" class="bigbtn" style="background:#0B5CAD;height:50px">Sign in</button>
       <div class="or">or sign in as a demo user</div>
       <div class="roles">${L.quick.map(function (q) { return html`<button key=${q.role} type="button" class="role" onClick=${q.pick} aria-label=${'Sign in as ' + q.label + ', ' + q.email}><span class="rav">${q.initials}</span><b>${q.label}</b><small>${q.desc}</small></button>`; })}</div>
-      <p class="muted" style="text-align:center;font-size:13px;margin:0">Demo accounts: customer@mahaveermetal.com, asm@, rm@, rfm@, csa@, treasury@, mfc@vedanta.com · password <b>${L.password}</b></p>
+      <p class="muted" style="text-align:center;font-size:13px;margin:0">Demo accounts: customer@mahaveermetal.com, asm@, rm@, rfm@, csa@, treasury@vedanta.com · password <b>${L.password}</b></p>
     </form>
   </div>
   <div class="wm" aria-hidden="true"></div>
@@ -1714,22 +1705,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
 
   ${v.vSupPB ? pbPage(v.pb) : null}
 
-  ${v.vM1 ? html`<div>
-    <p class="muted" style="font-size:14px;margin:-6px 0 16px">Only customers enabled here see the M-1 option. M-1 is a MOSS plan submitted one delivery month ahead; approval ASM → RM.</p>
-    <div class="card" style="overflow-x:auto;margin-bottom:20px"><div style="min-width:820px">
-      <div class="thead g-m1"><div>Customer ID</div><div>Customer Name</div><div>Region</div><div>Products</div><div>M-1 Access</div><div>Last Change</div></div>
-      ${v.m1Page.rows.map(function (r) { return html`<div key=${r.code} class="trow g-m1">
-        <div style="color:#0B5CAD;font-weight:600">${r.code}</div><div>${r.name}</div><div>${r.region}</div><div>${r.products}</div>
-        <div><button type="button" class=${'sw' + (r.on ? ' sw-on' : '')} role="switch" aria-checked=${r.on ? 'true' : 'false'} aria-label=${'M-1 access for ' + r.name} onClick=${r.toggle}><span></span></button> <span style="font-size:13px;margin-left:6px">${r.label}</span></div>
-        <div class="muted" style="font-size:13px">${r.log}</div>
-      </div>`; })}
-    </div></div>
-    <h2 style="font-size:17px;font-weight:700;margin:0 0 10px">M-1 submission window</h2>
-    <div class="card" style="overflow-x:auto"><div style="min-width:620px">
-      <div class="thead g-m1w"><div>Delivery Month</div><div>Submission Deadline</div><div>Status</div></div>
-      ${v.m1Page.windows.map(function (w) { return html`<div key=${w.d} class="trow g-m1w"><div>${w.d}</div><div>${w.deadline}</div><div style=${w.style}>${w.status}</div></div>`; })}
-    </div></div>
-  </div>` : null}
+
 
   ${v.vDash ? html`<div>
     <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:16px">
