@@ -543,11 +543,7 @@ class App extends React.Component {
       return this.flash((ids.length > 1 ? ids.length + ' Plans Approved Successfully' : 'Plan Approved Successfully') + (m1Done ? ' · M-1 instruction email sent to Treasury and CSA · sent to SAP under M-1 column' : ''));
     }
     var r = s.reqs.find(function (x) { return x.id === md.id; });
-    if (s.role === 'RFM' && !/^\d+(\.\d{1,2})?$/.test(String(f.sc || '').trim())) return this.setForm({ err: 'Enter the service charge in USD/MT, for example 10.00.' });
-    if (s.role === 'Treasury' && !/^\d+(\.\d{1,3})?$/.test(String(f.bw || '').trim())) return this.setForm({ err: 'Enter a value with up to 3 decimals, for example 3.125.' });
     var nr = Object.assign({}, r); nr.stage = r.stage + 1;
-    if (s.role === 'RFM') nr.sc = Number(f.sc).toFixed(2);
-    if (s.role === 'Treasury') nr.bw = String(f.bw).trim();
     var reqs = s.reqs.map(function (x) { return x.id === r.id ? nr : x; });
     var bookings = s.bookings; var seq = s.seq;
     this.setState({ reqs: reqs, bookings: bookings, seq: seq, modal: null, form: {} });
@@ -1091,7 +1087,7 @@ class App extends React.Component {
         };
       } else {
         var ar = s.reqs.find(function (x) { return x.id === md.id; }); var ap = this.poById(ar.po);
-        var needSc = role === 'RFM'; var needBw = role === 'Treasury';
+        var needSc = false; var needBw = false;
         ma = {
           title: 'Approve ' + ar.type + ' ' + ar.id,
           lines: ['Customer: ' + ap.cust + ' · ' + ap.custName, 'PO ID: ' + ar.po + ' · ' + ap.product, 'Quantity: ' + fmt(ar.qty) + ' MT · ' + ar.priceType + ' · pricing in ' + ml(ar.month), 'Next: ' + (ar.stage + 1 < 5 ? CHAIN[ar.stage + 1] + ' Approval Pending' : 'Approved and customer emailed')],
