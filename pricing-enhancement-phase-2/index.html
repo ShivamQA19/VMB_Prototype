@@ -399,7 +399,7 @@ function seedState(){
   function po(o){ var r = {}; var k; for (k in M) r[k] = M[k]; for (k in o) r[k] = o[k]; if (!r.rejectedBy) r.rejectedBy = ''; return r; }
   return {
     role: 'Customer', tab: 'home', afterCutoff: false, toast: '', modal: null, form: {}, supStatus: 'all', supType: 'all', seq: 100, cartErr: '', selected: {},
-    cart: emptyCart(), pdp: newPdp('LEAD'), m1: { '777': true, '8741': false, '1150': true },
+    cart: emptyCart(), pdp: newPdp('LEAD'), m1: { '777': false, '8741': false, '1150': false },
     pos: [
       po({ id: 'MOG100018150', priceType: 'Day CSP', deliv: 8, planned: 200, delivered: 200, stage: 2, created: '28/08/2026 10:15 AM', kind: 'Initial Plan', seq: 10 }),
       po({ id: 'MOG100018163', priceType: 'Day CSP', deliv: 9, planned: 100, delivered: 100, stage: 2, created: '29/09/2026 11:05 AM', kind: 'Initial Plan', seq: 20 }),
@@ -1465,7 +1465,7 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
       </div>` : html`<div class="muted" style="padding:28px 18px;font-size:14px">${v.pdp.otherNote}</div>`}
     </div>
     <div style="flex:1 1 300px;min-width:0;padding:4px 0">
-      ${v.pdp.m1On ? html`<div style="margin-bottom:20px">
+      ${false && v.pdp.m1On ? html`<div style="margin-bottom:20px">
         <div style="font-size:16px;margin-bottom:8px">Plan Type</div>
         <div class="seg" role="group" aria-label="Plan type"><button type="button" class=${v.pdp.regCls} aria-pressed=${v.pdp.isM1 ? 'false' : 'true'} onClick=${v.pdp.setRegular}>Regular Plan</button><button type="button" class=${v.pdp.m1Cls} aria-pressed=${v.pdp.isM1 ? 'true' : 'false'} onClick=${v.pdp.setM1}>M-1 Plan</button></div>
       </div>` : null}
@@ -1548,7 +1548,6 @@ ${v.nav.scrim ? html`<div class="sb-scrim" onClick=${v.nav.close} aria-hidden="t
           <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin-top:18px">
             <div><label class="lbl" for="rin">Rollover (MT)</label><input id="rin" class="inp" readOnly value=${v.rollInLabel} /></div>
             <div><label class="lbl" for="pin">Preponement (MT)</label><input id="pin" class="inp" readOnly value=${v.prepInLabel} /></div>
-            <div><label class="lbl" for="m1in">M-1 (MT)</label><input id="m1in" class="inp" readOnly value=${v.m1InLabel} /></div>
           </div>
           ${v.carried.map(function (c) { return html`<div key=${c} class="muted" style="font-size:13px;margin-top:6px">${c}</div>`; })}
         </section>
